@@ -1,108 +1,844 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vigenère Breaker Pro</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --primary: #3498db;
+            --secondary: #2ecc71;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --background: #2c3e50;
+            --panel: #34495e;
+            --text: #ecf0f1;
+            --text-muted: #bdc3c7;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: var(--background);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 20px;
+        }
+
+        .control-panel {
+            background: var(--panel);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        input[type="text"], textarea, select {
+            width: 100%;
+            padding: 12px;
+            background: rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--text);
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border 0.3s;
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+            font-family: monospace;
+        }
+
+        input[type="text"]:focus, textarea:focus, select:focus {
+            border-color: var(--primary);
+            outline: none;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 4px;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--primary);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            margin: 5px 0;
+            transition: all 0.3s;
+            font-weight: 500;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        button:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        #stopBtn {
+            background: var(--danger);
+        }
+
+        #saveBtn {
+            background: var(--secondary);
+        }
+
+        .progress {
+            height: 10px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--secondary);
+            border-radius: 10px;
+            transition: width 0.3s;
+            position: relative;
+        }
+
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, 
+                rgba(255,255,255,0) 0%, 
+                rgba(255,255,255,0.3) 50%, 
+                rgba(255,255,255,0) 100%);
+            animation: progressAnimation 2s infinite linear;
+            background-size: 200% 100%;
+        }
+
+        @keyframes progressAnimation {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .stats {
+            background: rgba(0,0,0,0.2);
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .stat-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .stat-value {
+            font-weight: 500;
+            color: var(--secondary);
+        }
+
+        .results {
+            background: var(--panel);
+            padding: 20px;
+            border-radius: 10px;
+            height: calc(100vh - 40px);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .results-content {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .result-item {
+            background: rgba(0,0,0,0.2);
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            border-left: 4px solid var(--primary);
+            transition: all 0.3s;
+        }
+
+        .result-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .result-item.best {
+            border-left-color: var(--secondary);
+            background: rgba(46, 204, 113, 0.1);
+        }
+
+        .result-key {
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+
+        .result-score {
+            display: inline-block;
+            background: rgba(0,0,0,0.3);
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+
+        .result-text {
+            font-family: monospace;
+            white-space: pre-wrap;
+            background: rgba(0,0,0,0.3);
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+
+        .best .result-key {
+            color: var(--secondary);
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            border-bottom-color: var(--primary);
+            color: var(--primary);
+            font-weight: 500;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            margin-left: 5px;
+            cursor: help;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: rgba(0,0,0,0.8);
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 10px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 13px;
+            font-weight: normal;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .status.active {
+            display: block;
+        }
+
+        .status.info {
+            background: rgba(52, 152, 219, 0.2);
+            border-left: 4px solid var(--primary);
+        }
+
+        .status.warning {
+            background: rgba(243, 156, 18, 0.2);
+            border-left: 4px solid var(--warning);
+        }
+
+        .status.error {
+            background: rgba(231, 76, 60, 0.2);
+            border-left: 4px solid var(--danger);
+        }
+
+        .copy-btn {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: var(--text);
+            padding: 2px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-left: 5px;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .results {
+                height: auto;
+                max-height: 500px;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div class="app-container">
-        <header class="app-header">
-            <h1>Vigenère Breaker Pro</h1>
-            <p class="app-description">Advanced ciphertext analysis tool</p>
-        </header>
-
-        <div class="main-content">
-            <div class="input-panel">
-                <div class="panel-section">
-                    <h2>Input Parameters</h2>
-                    
-                    <div class="form-group">
-                        <label for="ciphertext">Ciphertext:</label>
-                        <textarea id="ciphertext" placeholder="Enter encrypted text here..."></textarea>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="alphabet">Alphabet:</label>
-                        <input type="text" id="alphabet" value="ABCDEFGHIJKLMNOPQRSTUVWXYZ" placeholder="Enter alphabet characters">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="workers">Worker Threads: <span id="workersValue">4</span></label>
-                        <input type="range" id="workers" min="1" max="16" value="4">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="keyLength">Max Key Length: <span id="keyLengthValue">10</span></label>
-                        <input type="range" id="keyLength" min="1" max="25" value="10">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="scoringMethod">Scoring Method:</label>
-                        <select id="scoringMethod">
-                            <option value="quadgrams">Quadgrams</option>
-                            <option value="trigrams">Trigrams</option>
-                            <option value="index">Index of Coincidence</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="knownPlaintext">Known Plaintext (optional):</label>
-                        <input type="text" id="knownPlaintext" placeholder="Known plaintext fragment">
-                    </div>
+    <div class="container">
+        <div class="control-panel">
+            <h2><i class="fas fa-sliders-h"></i> Параметры взлома</h2>
+            
+            <div class="form-group">
+                <label>
+                    Алфавит:
+                    <span class="tooltip">
+                        <i class="fas fa-question-circle"></i>
+                        <span class="tooltiptext">Символы, которые будут использоваться для взлома (регистр учитывается)</span>
+                    </span>
+                </label>
+                <input type="text" id="alphabet" value="ABCDEFGHIJKLMNOPQRSTUVWXYZ">
+            </div>
+            
+            <div class="form-group">
+                <label>Метод оценки текста:</label>
+                <select id="scoringMethod">
+                    <option value="quadgrams">Quadgram анализ (рекомендуется)</option>
+                    <option value="indexOfCoincidence">Индекс совпадений</option>
+                    <option value="frequency">Частотный анализ</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>
+                    Известный фрагмент текста:
+                    <span class="tooltip">
+                        <i class="fas fa-question-circle"></i>
+                        <span class="tooltiptext">Если известен фрагмент исходного текста, укажите его для ускорения взлома</span>
+                    </span>
+                </label>
+                <input type="text" id="knownPlaintext" placeholder="Например: ATTACKATDAWN">
+            </div>
+            
+            <div class="form-group">
+                <label>Количество потоков: <span id="workersValue" class="stat-value">4</span></label>
+                <input type="range" id="workers" min="1" max="8" value="4">
+            </div>
+            
+            <div class="form-group">
+                <label>Макс. длина ключа: <span id="keyLengthValue" class="stat-value">10</span></label>
+                <input type="range" id="keyLength" min="1" max="20" value="10">
+            </div>
+            
+            <div class="form-group">
+                <label>Количество результатов: <span id="resultsLimitValue" class="stat-value">10</span></label>
+                <input type="range" id="resultsLimit" min="1" max="20" value="10">
+            </div>
+            
+            <button id="startBtn">
+                <i class="fas fa-play"></i> Начать атаку
+            </button>
+            <button id="stopBtn" disabled>
+                <i class="fas fa-stop"></i> Остановить
+            </button>
+            <button id="saveBtn" disabled>
+                <i class="fas fa-save"></i> Сохранить результаты
+            </button>
+            
+            <div class="progress">
+                <div id="progressBar" class="progress-bar" style="width: 0%"></div>
+            </div>
+            
+            <div class="status" id="statusMessage"></div>
+            
+            <div class="stats">
+                <div class="stat-item">
+                    <span>Проверено ключей:</span>
+                    <span id="keysTested" class="stat-value">0</span>
                 </div>
-                
-                <div class="action-buttons">
-                    <button id="startBtn" class="btn-primary">Start Attack</button>
-                    <button id="stopBtn" class="btn-danger" disabled>Stop</button>
-                    <button id="clearBtn" class="btn-secondary">Clear All</button>
+                <div class="stat-item">
+                    <span>Скорость:</span>
+                    <span id="speed" class="stat-value">0</span> keys/sec
+                </div>
+                <div class="stat-item">
+                    <span>Осталось:</span>
+                    <span id="timeLeft" class="stat-value">-</span>
+                </div>
+                <div class="stat-item">
+                    <span>Лучший результат:</span>
+                    <span id="bestScore" class="stat-value">-</span>
                 </div>
             </div>
+        </div>
 
-            <div class="results-panel">
-                <div class="results-header">
-                    <h2>Decryption Results</h2>
-                    <div class="results-controls">
-                        <button id="exportBtn" class="btn-secondary">Export Results</button>
-                    </div>
+        <div class="results">
+            <div class="results-header">
+                <h2><i class="fas fa-list-ul"></i> Результаты</h2>
+                <div id="resultsCount">Найдено: 0</div>
+            </div>
+            
+            <div class="tabs">
+                <div class="tab active" data-tab="input">Ввод</div>
+                <div class="tab" data-tab="results">Расшифровки</div>
+            </div>
+            
+            <div class="tab-content active" id="input-tab">
+                <textarea id="ciphertext" placeholder="Введите шифртекст для взлома..."></textarea>
+                <div style="text-align: right; margin-top: 5px;">
+                    <small style="color: var(--text-muted);">Длина: <span id="ciphertextLength">0</span> символов</small>
                 </div>
-                
-                <div class="stats-panel">
-                    <div class="stat-item">
-                        <span class="stat-label">Keys Tested:</span>
-                        <span id="keysTested" class="stat-value">0</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Speed:</span>
-                        <span id="speed" class="stat-value">0</span>
-                        <span class="stat-unit">keys/sec</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Time Left:</span>
-                        <span id="timeLeft" class="stat-value">-</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Best Score:</span>
-                        <span id="bestScore" class="stat-value">-</span>
-                    </div>
-                </div>
-                
-                <div class="progress-section">
-                    <div class="progress-container">
-                        <div id="progressBar" class="progress-bar"></div>
-                    </div>
-                    <div class="progress-text">
-                        <span id="progressPercent">0%</span>
-                    </div>
-                </div>
-                
-                <div id="resultsContainer" class="results-container"></div>
+            </div>
+            
+            <div class="tab-content" id="results-tab">
+                <div id="resultsContainer"></div>
             </div>
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <script>
+        class VigenereBreaker {
+            constructor() {
+                this.workers = [];
+                this.startTime = 0;
+                this.keysTested = 0;
+                this.totalKeys = 0;
+                this.isRunning = false;
+                this.results = [];
+                this.bestScore = -Infinity;
+                this.resultsLimit = 10;
+                this.updateInterval = null;
+            }
+
+            init(alphabet, workers, maxKeyLength, resultsLimit) {
+                this.stop();
+                this.workers = [];
+                this.results = [];
+                this.bestScore = -Infinity;
+                this.keysTested = 0;
+                this.resultsLimit = resultsLimit;
+                
+                // Создаем Web Workers
+                for (let i = 0; i < workers; i++) {
+                    const worker = new Worker('worker.js');
+                    worker.onmessage = (e) => this.handleMessage(e);
+                    this.workers.push(worker);
+                }
+                
+                this.totalKeys = this.calculateTotalKeys(alphabet.length, maxKeyLength);
+                this.updateUI();
+            }
+
+            start(ciphertext, alphabet, maxKeyLength, scoringMethod, knownPlaintext) {
+                if (!ciphertext || ciphertext.trim().length === 0) {
+                    this.showStatus("Введите шифртекст для взлома", "error");
+                    return;
+                }
+
+                this.isRunning = true;
+                this.startTime = performance.now();
+                this.showStatus("Запуск атаки...", "info");
+                
+                // Рассылаем задачи по воркерам
+                const keysPerWorker = Math.ceil(this.totalKeys / this.workers.length);
+                const alphabetSize = alphabet.length;
+                
+                this.workers.forEach((worker, i) => {
+                    const startIdx = i * keysPerWorker;
+                    const endIdx = Math.min((i + 1) * keysPerWorker, this.totalKeys);
+                    
+                    worker.postMessage({
+                        type: 'START',
+                        ciphertext,
+                        alphabet,
+                        maxKeyLength,
+                        scoringMethod,
+                        knownPlaintext,
+                        workerId: i,
+                        startIdx,
+                        endIdx
+                    });
+                });
+                
+                // Запускаем обновление UI
+                this.updateInterval = setInterval(() => this.updateUI(), 500);
+                
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = false;
+                document.getElementById('saveBtn').disabled = true;
+            }
+
+            handleMessage(e) {
+                const {type, data} = e.data;
+                
+                switch(type) {
+                    case 'PROGRESS':
+                        this.keysTested += data.keysTested;
+                        break;
+                        
+                    case 'RESULT':
+                        this.addResult(data.result);
+                        break;
+                        
+                    case 'ERROR':
+                        this.showStatus(`Ошибка в потоке ${data.workerId}: ${data.error.message}`, "error");
+                        console.error(data.error);
+                        break;
+                        
+                    case 'WARNING':
+                        this.showStatus(data.message, "warning");
+                        break;
+                        
+                    case 'COMPLETE':
+                        this.workerComplete(data.workerId);
+                        break;
+                }
+            }
+
+            addResult(result) {
+                // Добавляем результат в массив и сортируем по убыванию оценки
+                this.results.push(result);
+                this.results.sort((a, b) => b.score - a.score);
+                
+                // Ограничиваем количество результатов
+                if (this.results.length > this.resultsLimit) {
+                    this.results.length = this.resultsLimit;
+                }
+                
+                // Обновляем лучший результат
+                if (result.score > this.bestScore) {
+                    this.bestScore = result.score;
+                }
+                
+                this.renderResults();
+            }
+
+            renderResults() {
+                const container = document.getElementById('resultsContainer');
+                container.innerHTML = '';
+                
+                if (this.results.length === 0) {
+                    container.innerHTML = '<div class="status info">Пока нет результатов. Атака в процессе...</div>';
+                    return;
+                }
+                
+                this.results.forEach((result, i) => {
+                    const div = document.createElement('div');
+                    div.className = `result-item ${i === 0 ? 'best' : ''}`;
+                    
+                    div.innerHTML = `
+                        <div class="result-key">
+                            ${result.key}
+                            <button class="copy-btn" data-text="${result.text.replace(/"/g, '&quot;')}">
+                                <i class="fas fa-copy"></i> Текст
+                            </button>
+                            <button class="copy-btn" data-text="${result.key.replace(/"/g, '&quot;')}">
+                                <i class="fas fa-copy"></i> Ключ
+                            </button>
+                        </div>
+                        <div class="result-score">Оценка: ${result.score.toFixed(4)}</div>
+                        <div class="result-text">${result.text}</div>
+                    `;
+                    
+                    container.appendChild(div);
+                });
+                
+                // Добавляем обработчики для кнопок копирования
+                document.querySelectorAll('.copy-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const text = btn.getAttribute('data-text');
+                        navigator.clipboard.writeText(text).then(() => {
+                            const originalHtml = btn.innerHTML;
+                            btn.innerHTML = '<i class="fas fa-check"></i> Скопировано';
+                            setTimeout(() => {
+                                btn.innerHTML = originalHtml;
+                            }, 2000);
+                        });
+                    });
+                });
+                
+                document.getElementById('resultsCount').textContent = `Найдено: ${this.results.length}`;
+            }
+
+            updateUI() {
+                if (!this.isRunning) return;
+                
+                const elapsed = (performance.now() - this.startTime) / 1000;
+                const speed = Math.floor(this.keysTested / elapsed);
+                const progress = Math.min(100, (this.keysTested / this.totalKeys * 100));
+                
+                document.getElementById('progressBar').style.width = `${progress}%`;
+                document.getElementById('keysTested').textContent = this.keysTested.toLocaleString();
+                document.getElementById('speed').textContent = speed.toLocaleString();
+                document.getElementById('bestScore').textContent = this.bestScore !== -Infinity ? this.bestScore.toFixed(4) : '-';
+                
+                // Расчет оставшегося времени
+                if (speed > 0) {
+                    const remaining = (this.totalKeys - this.keysTested) / speed;
+                    document.getElementById('timeLeft').textContent = this.formatTime(remaining);
+                }
+            }
+
+            workerComplete(workerId) {
+                console.log(`Worker ${workerId} completed`);
+                
+                // Проверяем, все ли воркеры завершили работу
+                const allComplete = this.workers.every(w => w.isComplete);
+                if (allComplete) {
+                    this.complete();
+                }
+            }
+
+            complete() {
+                clearInterval(this.updateInterval);
+                this.isRunning = false;
+                
+                const elapsed = ((performance.now() - this.startTime) / 1000).toFixed(2);
+                this.showStatus(`Атака завершена! Проверено ${this.keysTested.toLocaleString()} ключей за ${elapsed} сек.`, "info");
+                
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('stopBtn').disabled = true;
+                document.getElementById('saveBtn').disabled = false;
+                
+                // Переключаем на вкладку результатов
+                this.switchTab('results');
+            }
+
+            stop() {
+                if (this.updateInterval) {
+                    clearInterval(this.updateInterval);
+                }
+                
+                this.workers.forEach(w => {
+                    try {
+                        w.terminate();
+                    } catch (e) {
+                        console.error("Error terminating worker:", e);
+                    }
+                });
+                
+                this.isRunning = false;
+                this.showStatus("Атака остановлена", "warning");
+                
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('stopBtn').disabled = true;
+                
+                if (this.keysTested > 0) {
+                    document.getElementById('saveBtn').disabled = false;
+                }
+            }
+
+            showStatus(message, type) {
+                const statusEl = document.getElementById('statusMessage');
+                statusEl.textContent = message;
+                statusEl.className = `status ${type} active`;
+                
+                // Автоматически скрываем через 5 секунд
+                setTimeout(() => {
+                    statusEl.classList.remove('active');
+                }, 5000);
+            }
+
+            calculateTotalKeys(alphabetSize, maxLength) {
+                // Сумма геометрической прогрессии: S = a1 * (q^n - 1) / (q - 1)
+                return alphabetSize * (Math.pow(alphabetSize, maxLength) - 1) / (alphabetSize - 1);
+            }
+
+            formatTime(seconds) {
+                if (seconds < 60) return `${Math.ceil(seconds)} сек`;
+                if (seconds < 3600) return `${Math.floor(seconds / 60)} мин ${Math.ceil(seconds % 60)} сек`;
+                
+                const hours = Math.floor(seconds / 3600);
+                const minutes = Math.floor((seconds % 3600) / 60);
+                return `${hours} ч ${minutes} мин`;
+            }
+
+            saveResults() {
+                if (this.results.length === 0) {
+                    this.showStatus("Нет результатов для сохранения", "warning");
+                    return;
+                }
+                
+                let content = `Результаты взлома шифра Виженера\n`;
+                content += `Дата: ${new Date().toLocaleString()}\n`;
+                content += `Проверено ключей: ${this.keysTested}\n`;
+                content += `Алфавит: ${document.getElementById('alphabet').value}\n`;
+                content += `Макс. длина ключа: ${document.getElementById('keyLength').value}\n\n`;
+                
+                this.results.forEach((result, i) => {
+                    content += `=== Результат ${i + 1} ===\n`;
+                    content += `Ключ: ${result.key}\n`;
+                    content += `Оценка: ${result.score.toFixed(4)}\n`;
+                    content += `Текст: ${result.text}\n\n`;
+                });
+                
+                const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `vigenere_break_${new Date().toISOString().slice(0, 10)}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                this.showStatus("Результаты сохранены в файл", "info");
+            }
+
+            switchTab(tabName) {
+                // Переключение вкладок
+                document.querySelectorAll('.tab').forEach(tab => {
+                    tab.classList.toggle('active', tab.dataset.tab === tabName);
+                });
+                
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.toggle('active', content.id === `${tabName}-tab`);
+                });
+            }
+        }
+
+        // Инициализация приложения
+        document.addEventListener('DOMContentLoaded', () => {
+            const breaker = new VigenereBreaker();
+            
+            // Обработчики элементов управления
+            document.getElementById('workers').addEventListener('input', function() {
+                document.getElementById('workersValue').textContent = this.value;
+            });
+            
+            document.getElementById('keyLength').addEventListener('input', function() {
+                document.getElementById('keyLengthValue').textContent = this.value;
+            });
+            
+            document.getElementById('resultsLimit').addEventListener('input', function() {
+                document.getElementById('resultsLimitValue').textContent = this.value;
+            });
+            
+            document.getElementById('ciphertext').addEventListener('input', function() {
+                document.getElementById('ciphertextLength').textContent = this.value.length;
+            });
+            
+            document.getElementById('startBtn').addEventListener('click', () => {
+                const alphabet = document.getElementById('alphabet').value;
+                const workers = parseInt(document.getElementById('workers').value);
+                const maxKeyLength = parseInt(document.getElementById('keyLength').value);
+                const ciphertext = document.getElementById('ciphertext').value;
+                const scoringMethod = document.getElementById('scoringMethod').value;
+                const knownPlaintext = document.getElementById('knownPlaintext').value;
+                const resultsLimit = parseInt(document.getElementById('resultsLimit').value);
+                
+                breaker.init(alphabet, workers, maxKeyLength, resultsLimit);
+                breaker.start(ciphertext, alphabet, maxKeyLength, scoringMethod, knownPlaintext);
+            });
+            
+            document.getElementById('stopBtn').addEventListener('click', () => {
+                breaker.stop();
+            });
+            
+            document.getElementById('saveBtn').addEventListener('click', () => {
+                breaker.saveResults();
+            });
+            
+            // Обработчики вкладок
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    breaker.switchTab(tab.dataset.tab);
+                });
+            });
+            
+            // Инициализация значений
+            document.getElementById('ciphertextLength').textContent = 
+                document.getElementById('ciphertext').value.length;
+        });
+    </script>
 </body>
 </html>
