@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vigenere Cracker Pro</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .panel {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        textarea {
+            width: 100%;
+            min-height: 100px;
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:disabled {
+            background: #cccccc;
+        }
+        button.stop {
+            background: #f44336;
+        }
+        .progress {
+            margin: 20px 0;
+            background: #e0e0e0;
+            border-radius: 4px;
+            height: 20px;
+        }
+        .progress-bar {
+            background: #4CAF50;
+            height: 100%;
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 4px;
+        }
+        .settings {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .setting-item {
+            margin-bottom: 10px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="range"] {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <h1>Vigenere Cracker Professional</h1>
+    
+    <div class="container">
+        <div class="panel">
+            <h2>Input</h2>
+            <label for="ciphertext">Ciphertext:</label>
+            <textarea id="ciphertext" placeholder="Enter encrypted text here"></textarea>
+            
+            <label for="known-text">Known Plaintext (optional):</label>
+            <input type="text" id="known-text" placeholder="Known part of text">
+            
+            <div class="settings">
+                <div class="setting-item">
+                    <label for="key-length">Max Key Length: <span id="key-length-value">5</span></label>
+                    <input type="range" id="key-length" min="1" max="10" value="5">
+                </div>
+                
+                <div class="setting-item">
+                    <label for="workers">Workers: <span id="workers-value">4</span></label>
+                    <input type="range" id="workers" min="1" max="8" value="4">
+                </div>
+            </div>
+            
+            <button id="start-btn">Start Cracking</button>
+            <button id="stop-btn" class="stop" disabled>Stop</button>
+            
+            <div class="progress">
+                <div id="progress-bar" class="progress-bar"></div>
+            </div>
+            
+            <div id="status">Ready</div>
+            <div>Keys tested: <span id="keys-tested">0</span></div>
+            <div>Speed: <span id="speed">0</span> keys/sec</div>
+        </div>
+        
+        <div class="panel">
+            <h2>Results</h2>
+            <div id="results"></div>
+        </div>
+    </div>
+
+    <script>
+        class VigenereCracker {
+            constructor() {
+                this.worker = new Worker('worker.js');
+                this.isRunning = false;
+                this.startTime = 0;
+                this.keysTested = 0;
+                this.totalKeys = 0;
+                this.worker.onmessage = (e) => this.handleWorkerMessage(e);
+                this.worker.onerror = (e) => this.handleWorkerError(e);
+            }
+
+            start(ciphertext, options) {
+                if (this.isRunning) return;
+                
+                this.isRunning = true;
+                this.startTime = performance.now();
+                this.keysTested = 0;
+                
+                this.worker.postMessage({
+                    type: 'START',
+                    ciphertext,
+                    options
+                });
+            }
+
+            stop() {
+                if (!this.isRunning) return;
+                
+                this.worker.postMessage({ type: 'STOP' });
+                this.isRunning = false;
+                return true;
+            }
+
+            handleWorkerMessage(e) {
+                const { type, data } = e.data;
+                
+                switch (type) {
+                    case 'PROGRESS':
+                        this.keysTested = data.keysTested;
+                        this.updateProgress();
+                        break;
+                        
+                    case 'RESULT':
+                        this.keysTested = data.keysTested;
+                        this.displayResult(data.result);
+                        this.updateProgress();
+                        break;
+                        
+                    case 'COMPLETE':
+                        this.isRunning = false;
+                        document.getElementById('start-btn').disabled = false;
+                        document.getElementById('stop-btn').disabled = true;
+                        document.getElementById('status').textContent = 'Complete';
+                        break;
+                        
+                    case 'ERROR':
+                        console.error('Worker error:', data.error);
+                        this.isRunning = false;
+                        document.getElementById('start-btn').disabled = false;
+                        document.getElementById('stop-btn').disabled = true;
+                        document.getElementById('status').textContent = 'Error: ' + data.error;
+                        break;
+                }
+            }
+
+            handleWorkerError(e) {
+                console.error('Worker fatal error:', e);
+                this.isRunning = false;
+                document.getElementById('start-btn').disabled = false;
+                document.getElementById('stop-btn').disabled = true;
+                document.getElementById('status').textContent = 'Worker crashed';
+            }
+
+            updateProgress() {
+                const elapsed = (performance.now() - this.startTime) / 1000;
+                const speed = Math.round(this.keysTested / elapsed);
+                const progress = this.totalKeys > 0 ? (this.keysTested / this.totalKeys) * 100 : 0;
+                
+                document.getElementById('progress-bar').style.width = `${progress}%`;
+                document.getElementById('keys-tested').textContent = this.keysTested.toLocaleString();
+                document.getElementById('speed').textContent = speed.toLocaleString();
+            }
+
+            displayResult(result) {
+                const resultsDiv = document.getElementById('results');
+                const resultDiv = document.createElement('div');
+                resultDiv.className = 'result';
+                resultDiv.innerHTML = `
+                    <h3>Key: ${result.key} (Score: ${result.score.toFixed(2)})</h3>
+                    <p>${result.plaintext}</p>
+                `;
+                resultsDiv.prepend(resultDiv);
+            }
+        }
+
+        // UI Setup
+        document.addEventListener('DOMContentLoaded', () => {
+            const cracker = new VigenereCracker();
+            const startBtn = document.getElementById('start-btn');
+            const stopBtn = document.getElementById('stop-btn');
+            
+            // Update range values
+            document.getElementById('key-length').addEventListener('input', (e) => {
+                document.getElementById('key-length-value').textContent = e.target.value;
+            });
+            
+            document.getElementById('workers').addEventListener('input', (e) => {
+                document.getElementById('workers-value').textContent = e.target.value;
+            });
+            
+            // Start cracking
+            startBtn.addEventListener('click', () => {
+                const ciphertext = document.getElementById('ciphertext').value;
+                if (!ciphertext) {
+                    alert('Please enter ciphertext');
+                    return;
+                }
+                
+                const options = {
+                    maxKeyLength: parseInt(document.getElementById('key-length').value),
+                    workers: parseInt(document.getElementById('workers').value),
+                    knownPlaintext: document.getElementById('known-text').value
+                };
+                
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                document.getElementById('status').textContent = 'Running...';
+                document.getElementById('results').innerHTML = '';
+                
+                cracker.start(ciphertext, options);
+            });
+            
+            // Stop cracking
+            stopBtn.addEventListener('click', () => {
+                if (cracker.stop()) {
+                    document.getElementById('status').textContent = 'Stopped';
+                    startBtn.disabled = false;
+                    stopBtn.disabled = true;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
