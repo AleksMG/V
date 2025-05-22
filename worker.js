@@ -1,10 +1,19 @@
 class VigenereCipher {
     constructor(alphabet) {
+        if (!alphabet || alphabet.length === 0) {
+            throw new Error("Alphabet cannot be empty");
+        }
+        
         this.alphabet = alphabet.toUpperCase();
         this.alphabetMap = {};
         
+        // Create mapping and check for duplicates
         for (let i = 0; i < this.alphabet.length; i++) {
-            this.alphabetMap[this.alphabet[i]] = i;
+            const char = this.alphabet[i];
+            if (this.alphabetMap[char] !== undefined) {
+                throw new Error(`Alphabet contains duplicate character: ${char}`);
+            }
+            this.alphabetMap[char] = i;
         }
     }
     
@@ -52,8 +61,7 @@ class TextScorer {
             'OFTH': 2.46, 'FTHE': 2.44, 'THES': 2.34, 'WITH': 2.32,
             'INTH': 2.13, 'ATIO': 2.08, 'OTHE': 2.06, 'TTHA': 1.98,
             'NDTH': 1.96, 'ETHE': 1.94, 'TOTH': 1.89, 'DTHE': 1.87,
-            'INGT': 1.85, 'INGA': 1.83, 'OFTH': 1.81, 'REQU': 1.79,
-            // Add more quadgrams as needed
+            'INGT': 1.85, 'INGA': 1.83, 'OFTH': 1.81, 'REQU': 1.79
         };
     }
     
@@ -63,8 +71,7 @@ class TextScorer {
             'THE': 3.51, 'AND': 2.99, 'ING': 2.78, 'ENT': 2.71,
             'ION': 2.55, 'HER': 2.45, 'FOR': 2.38, 'THA': 2.34,
             'NTH': 2.33, 'INT': 2.19, 'ERE': 2.16, 'TIO': 2.15,
-            'TER': 2.09, 'EST': 2.03, 'ERS': 1.99, 'ATI': 1.97,
-            // Add more trigrams as needed
+            'TER': 2.09, 'EST': 2.03, 'ERS': 1.99, 'ATI': 1.97
         };
     }
     
@@ -201,7 +208,8 @@ function processBatch(batch, ciphertext, knownPlaintext, scoringMethod) {
                     type: 'PROGRESS',
                     data: {
                         processed,
-                        workerId: self.workerId
+                        workerId: self.workerId,
+                        batchId: batch.batchId
                     }
                 });
             }
