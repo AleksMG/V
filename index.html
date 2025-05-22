@@ -396,6 +396,7 @@
                     <option value="quadgrams">Quadgram анализ (рекомендуется)</option>
                     <option value="indexOfCoincidence">Индекс совпадений</option>
                     <option value="frequency">Частотный анализ</option>
+                    <option value="auto">Автоматический выбор</option>
                 </select>
             </div>
             
@@ -497,30 +498,44 @@
                 this.bestScore = -Infinity;
                 this.resultsLimit = 10;
                 this.updateInterval = null;
+                this.completedWorkers = 0;
             }
 
             init(alphabet, workers, maxKeyLength, resultsLimit) {
+                if (!alphabet || alphabet.length < 2) {
+                    this.showStatus("Алфавит должен содержать минимум 2 символа", "error");
+                    return false;
+                }
+
                 this.stop();
                 this.workers = [];
                 this.results = [];
                 this.bestScore = -Infinity;
                 this.keysTested = 0;
                 this.resultsLimit = resultsLimit;
+                this.completedWorkers = 0;
                 
-                // Создаем Web Workers
-                for (let i = 0; i < workers; i++) {
-                    const worker = new Worker('worker.js');
-                    worker.onmessage = (e) => this.handleMessage(e);
-                    this.workers.push(worker);
+                try {
+                    // Создаем Web Workers
+                    for (let i = 0; i < workers; i++) {
+                        const worker = new Worker('worker.js');
+                        worker.onmessage = (e) => this.handleMessage(e);
+                        worker.isComplete = false;
+                        this.workers.push(worker);
+                    }
+                    
+                    this.totalKeys = this.calculateTotalKeys(alphabet.length, maxKeyLength);
+                    this.updateUI();
+                    return true;
+                } catch (e) {
+                    this.showStatus(`Ошибка инициализации: ${e.message}`, "error");
+                    return false;
                 }
-                
-                this.totalKeys = this.calculateTotalKeys(alphabet.length, maxKeyLength);
-                this.updateUI();
             }
 
             start(ciphertext, alphabet, maxKeyLength, scoringMethod, knownPlaintext) {
-                if (!ciphertext || ciphertext.trim().length === 0) {
-                    this.showStatus("Введите шифртекст для взлома", "error");
+                if (!ciphertext || ciphertext.trim().length < 10) {
+                    this.showStatus("Введите шифртекст (минимум 10 символов)", "error");
                     return;
                 }
 
@@ -530,23 +545,26 @@
                 
                 // Рассылаем задачи по воркерам
                 const keysPerWorker = Math.ceil(this.totalKeys / this.workers.length);
-                const alphabetSize = alphabet.length;
                 
                 this.workers.forEach((worker, i) => {
-                    const startIdx = i * keysPerWorker;
-                    const endIdx = Math.min((i + 1) * keysPerWorker, this.totalKeys);
-                    
-                    worker.postMessage({
-                        type: 'START',
-                        ciphertext,
-                        alphabet,
-                        maxKeyLength,
-                        scoringMethod,
-                        knownPlaintext,
-                        workerId: i,
-                        startIdx,
-                        endIdx
-                    });
+                    try {
+                        const startIdx = i * keysPerWorker;
+                        const endIdx = Math.min((i + 1) * keysPerWorker, this.totalKeys);
+                        
+                        worker.postMessage({
+                            type: 'START',
+                            ciphertext: ciphertext,
+                            alphabet: alphabet,
+                            maxKeyLength: maxKeyLength,
+                            scoringMethod: scoringMethod,
+                            knownPlaintext: knownPlaintext,
+                            workerId: i,
+                            startIdx: startIdx,
+                            endIdx: endIdx
+                        });
+                    } catch (e) {
+                        this.showStatus(`Ошибка запуска потока ${i}: ${e.message}`, "error");
+                    }
                 });
                 
                 // Запускаем обновление UI
@@ -560,33 +578,41 @@
             handleMessage(e) {
                 const {type, data} = e.data;
                 
-                switch(type) {
-                    case 'PROGRESS':
-                        this.keysTested += data.keysTested;
-                        break;
-                        
-                    case 'RESULT':
-                        this.addResult(data.result);
-                        break;
-                        
-                    case 'ERROR':
-                        this.showStatus(`Ошибка в потоке ${data.workerId}: ${data.error.message}`, "error");
-                        console.error(data.error);
-                        break;
-                        
-                    case 'WARNING':
-                        this.showStatus(data.message, "warning");
-                        break;
-                        
-                    case 'COMPLETE':
-                        this.workerComplete(data.workerId);
-                        break;
+                try {
+                    switch(type) {
+                        case 'PROGRESS':
+                            this.keysTested += data.keysTested;
+                            break;
+                            
+                        case 'RESULT':
+                            this.addResult(data.results);
+                            break;
+                            
+                        case 'ERROR':
+                            this.showStatus(`Ошибка в потоке ${data.workerId}: ${data.error.message}`, "error");
+                            console.error(data.error);
+                            break;
+                            
+                        case 'WARNING':
+                            this.showStatus(data.message, "warning");
+                            break;
+                            
+                        case 'COMPLETE':
+                            this.workerComplete(data.workerId);
+                            break;
+                    }
+                } catch (e) {
+                    console.error("Ошибка обработки сообщения:", e);
                 }
             }
 
-            addResult(result) {
-                // Добавляем результат в массив и сортируем по убыванию оценки
-                this.results.push(result);
+            addResult(newResults) {
+                if (!newResults || newResults.length === 0) return;
+                
+                // Добавляем новые результаты
+                this.results = this.results.concat(newResults);
+                
+                // Сортируем по убыванию оценки
                 this.results.sort((a, b) => b.score - a.score);
                 
                 // Ограничиваем количество результатов
@@ -595,8 +621,8 @@
                 }
                 
                 // Обновляем лучший результат
-                if (result.score > this.bestScore) {
-                    this.bestScore = result.score;
+                if (this.results.length > 0 && this.results[0].score > this.bestScore) {
+                    this.bestScore = this.results[0].score;
                 }
                 
                 this.renderResults();
@@ -604,6 +630,8 @@
 
             renderResults() {
                 const container = document.getElementById('resultsContainer');
+                if (!container) return;
+                
                 container.innerHTML = '';
                 
                 if (this.results.length === 0) {
@@ -653,7 +681,7 @@
                 if (!this.isRunning) return;
                 
                 const elapsed = (performance.now() - this.startTime) / 1000;
-                const speed = Math.floor(this.keysTested / elapsed);
+                const speed = Math.floor(this.keysTested / Math.max(0.1, elapsed));
                 const progress = Math.min(100, (this.keysTested / this.totalKeys * 100));
                 
                 document.getElementById('progressBar').style.width = `${progress}%`;
@@ -671,9 +699,14 @@
             workerComplete(workerId) {
                 console.log(`Worker ${workerId} completed`);
                 
+                // Помечаем воркера как завершенного
+                const worker = this.workers.find(w => w.workerId === workerId);
+                if (worker) worker.isComplete = true;
+                
+                this.completedWorkers++;
+                
                 // Проверяем, все ли воркеры завершили работу
-                const allComplete = this.workers.every(w => w.isComplete);
-                if (allComplete) {
+                if (this.completedWorkers === this.workers.length) {
                     this.complete();
                 }
             }
@@ -687,7 +720,7 @@
                 
                 document.getElementById('startBtn').disabled = false;
                 document.getElementById('stopBtn').disabled = true;
-                document.getElementById('saveBtn').disabled = false;
+                document.getElementById('saveBtn').disabled = this.results.length === 0;
                 
                 // Переключаем на вкладку результатов
                 this.switchTab('results');
@@ -719,6 +752,8 @@
 
             showStatus(message, type) {
                 const statusEl = document.getElementById('statusMessage');
+                if (!statusEl) return;
+                
                 statusEl.textContent = message;
                 statusEl.className = `status ${type} active`;
                 
@@ -816,8 +851,9 @@
                 const knownPlaintext = document.getElementById('knownPlaintext').value;
                 const resultsLimit = parseInt(document.getElementById('resultsLimit').value);
                 
-                breaker.init(alphabet, workers, maxKeyLength, resultsLimit);
-                breaker.start(ciphertext, alphabet, maxKeyLength, scoringMethod, knownPlaintext);
+                if (breaker.init(alphabet, workers, maxKeyLength, resultsLimit)) {
+                    breaker.start(ciphertext, alphabet, maxKeyLength, scoringMethod, knownPlaintext);
+                }
             });
             
             document.getElementById('stopBtn').addEventListener('click', () => {
