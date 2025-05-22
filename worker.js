@@ -1,3 +1,4 @@
+const workerCode = `
 class VigenereCipher {
     constructor(alphabet) {
         this.alphabet = alphabet.toUpperCase();
@@ -7,6 +8,35 @@ class VigenereCipher {
         for (let i = 0; i < this.alphabet.length; i++) {
             this.charToIndex.set(this.alphabet[i], i);
         }
+    }
+
+    encrypt(plaintext, key) {
+        let result = '';
+        const keyUpper = key.toUpperCase();
+        let keyIndex = 0;
+
+        for (const char of plaintext) {
+            const upperChar = char.toUpperCase();
+            
+            if (this.charToIndex.has(upperChar)) {
+                const textPos = this.charToIndex.get(upperChar);
+                const keyPos = this.charToIndex.get(keyUpper[keyIndex % keyUpper.length]);
+                const newPos = (textPos + keyPos) % this.alphabet.length;
+                
+                let newChar = this.alphabet[newPos];
+                // Сохраняем оригинальный регистр
+                if (char === char.toLowerCase()) {
+                    newChar = newChar.toLowerCase();
+                }
+                
+                result += newChar;
+                keyIndex++;
+            } else {
+                result += char;
+            }
+        }
+        
+        return result;
     }
 
     decrypt(ciphertext, key) {
@@ -38,163 +68,161 @@ class VigenereCipher {
         return result;
     }
 
-    generateKey(index, maxLength) {
-        let key = '';
-        const alphabetSize = this.alphabet.length;
+    *generateKeys(maxLength) {
+        const alphabet = this.alphabet;
+        const queue = [...alphabet].map(c => [c]);
         
-        for (let length = 1; length <= maxLength; length++) {
-            const keysOfLength = Math.pow(alphabetSize, length);
-            if (index < keysOfLength) {
-                for (let i = 0; i < length; i++) {
-                    const charIndex = Math.floor(index / Math.pow(alphabetSize, i)) % alphabetSize;
-                    key = this.alphabet[charIndex] + key;
+        while (queue.length > 0) {
+            const current = queue.shift();
+            yield current.join('');
+            
+            if (current.length < maxLength) {
+                for (const char of alphabet) {
+                    queue.push([...current, char]);
                 }
-                return key;
             }
-            index -= keysOfLength;
         }
-        
-        return '';
     }
 }
 
-class ProfessionalTextScorer {
+class AdvancedTextScorer {
     constructor() {
-        // Полные статистики английского языка
-        this.trigrams = {
-            'THE': 0.0181, 'AND': 0.0073, 'ING': 0.0072, 'ION': 0.0042,
-            'ENT': 0.0042, 'HER': 0.0036, 'FOR': 0.0034, 'THA': 0.0033,
-            'NTH': 0.0033, 'INT': 0.0032, 'ERE': 0.0031, 'TIO': 0.0031,
-            'TER': 0.0030, 'EST': 0.0028, 'ERS': 0.0028, 'ATI': 0.0027,
-            'HAT': 0.0026, 'ATE': 0.0026, 'ALL': 0.0026, 'ETH': 0.0026,
-            'HES': 0.0025, 'VER': 0.0024, 'HIS': 0.0024, 'OFT': 0.0022,
-            'ITH': 0.0022, 'FTH': 0.0022, 'STH': 0.0021, 'OTH': 0.0021
+        // Частоты букв в английском языке
+        this.letterFrequencies = {
+            'E': 0.12702, 'T': 0.09056, 'A': 0.08167, 'O': 0.07507,
+            'I': 0.06966, 'N': 0.06749, 'S': 0.06327, 'H': 0.06094,
+            'R': 0.05987, 'D': 0.04253, 'L': 0.04025, 'C': 0.02782,
+            'U': 0.02758, 'M': 0.02406, 'W': 0.02360, 'F': 0.02228,
+            'G': 0.02015, 'Y': 0.01974, 'P': 0.01929, 'B': 0.01492,
+            'V': 0.00978, 'K': 0.00772, 'J': 0.00153, 'X': 0.00150,
+            'Q': 0.00095, 'Z': 0.00074
         };
 
-        this.shortWords = new Set([
+        // Частоты диграмм
+        this.digrams = {
+            'TH': 1.52, 'HE': 1.28, 'IN': 0.94, 'ER': 0.94,
+            'AN': 0.82, 'RE': 0.68, 'ND': 0.63, 'AT': 0.59,
+            'ON': 0.57, 'NT': 0.56, 'HA': 0.56, 'ES': 0.56,
+            'ST': 0.55, 'EN': 0.55, 'ED': 0.53, 'TO': 0.52,
+            'IT': 0.50, 'OU': 0.50, 'EA': 0.47, 'HI': 0.46
+        };
+
+        this.commonWords = new Set([
             'THE', 'AND', 'FOR', 'ARE', 'BUT', 'NOT', 'YOU', 'ALL', 'ANY', 'CAN',
             'HAD', 'HER', 'WAS', 'ONE', 'OUR', 'OUT', 'DAY', 'GET', 'HAS', 'HIM',
             'HIS', 'HOW', 'MAN', 'NEW', 'NOW', 'OLD', 'SEE', 'TWO', 'WAY', 'WHO',
-            'BOY', 'DID', 'ITS', 'LET', 'PUT', 'SAY', 'SHE', 'TOO', 'USE', 'OF',
-            'TO', 'IN', 'IT', 'IS', 'BE', 'AS', 'AT', 'SO', 'WE', 'HE', 'BY', 'OR',
-            'ON', 'DO', 'IF', 'ME', 'MY', 'UP', 'AN', 'GO', 'NO', 'US', 'AM'
+            'BOY', 'DID', 'ITS', 'LET', 'PUT', 'SAY', 'SHE', 'TOO', 'USE'
         ]);
-
-        this.impossiblePairs = [
-            'QJ', 'QG', 'QK', 'QX', 'QZ', 'WQ', 'WX', 'WZ', 'XJ', 'XK',
-            'XQ', 'XZ', 'ZQ', 'ZJ', 'ZX', 'FV', 'FJ', 'FQ', 'FZ', 'JV',
-            'JQ', 'JX', 'JZ', 'PQ', 'QC', 'QE', 'QD', 'QT', 'QY', 'QB'
-        ];
     }
 
     score(text) {
         const cleanText = text.toUpperCase().replace(/[^A-Z]/g, '');
-        if (cleanText.length < 15) return -Infinity;
+        if (cleanText.length < 5) return -Infinity;
 
-        // 1. Основные оценки
-        const trigramScore = this._calculateTrigramScore(cleanText);
-        const shortWordScore = this._calculateShortWordScore(text); // Оригинальный текст с регистром
-        const caseConsistency = this._checkCaseConsistency(text);
-
-        // 2. Штрафы
-        const impossiblePairPenalty = this._calculateImpossiblePairPenalty(cleanText);
+        // 1. Оценка частот букв
+        const letterScore = this._calculateLetterScore(cleanText);
+        
+        // 2. Оценка диграмм
+        const digramScore = this._calculateDigramScore(cleanText);
+        
+        // 3. Оценка коротких слов
+        const wordScore = this._calculateWordScore(text);
+        
+        // 4. Оценка повторений
+        const repetitionScore = this._calculateRepetitionScore(cleanText);
 
         // Комбинированная оценка
-        return (trigramScore * 0.6) + 
-               (shortWordScore * 0.35) + 
-               (caseConsistency * 0.05) - 
-               (impossiblePairPenalty * 1.5);
+        return (letterScore * 0.4) + 
+               (digramScore * 0.3) + 
+               (wordScore * 0.2) + 
+               (repetitionScore * 0.1);
     }
 
-    _calculateTrigramScore(text) {
+    _calculateLetterScore(text) {
+        const counts = {};
         let score = 0;
-        const textLength = text.length;
         
-        for (let i = 0; i < textLength - 2; i++) {
-            const trigram = text.substr(i, 3);
-            const probability = this.trigrams[trigram] || 1e-12;
+        // Подсчет букв
+        for (const char of text) {
+            counts[char] = (counts[char] || 0) + 1;
+        }
+        
+        // Сравнение с эталонными частотами
+        for (const [char, freq] of Object.entries(this.letterFrequencies)) {
+            const observed = (counts[char] || 0) / text.length;
+            score += Math.min(freq, observed);
+        }
+        
+        return score;
+    }
+
+    _calculateDigramScore(text) {
+        let score = 0;
+        
+        for (let i = 0; i < text.length - 1; i++) {
+            const digram = text.substr(i, 2);
+            const probability = this.digrams[digram] || 0.01;
             score += Math.log10(probability);
         }
         
-        return score / (textLength - 2);
+        return score / (text.length - 1);
     }
 
-    _calculateShortWordScore(text) {
+    _calculateWordScore(text) {
         const words = text.split(/[^a-zA-Z']+/);
         let score = 0;
-        let validWordCount = 0;
+        let validWords = 0;
         
         for (const word of words) {
-            if (word.length >= 2 && word.length <= 3) {
-                if (this.shortWords.has(word.toUpperCase())) {
-                    // Больший вес для более коротких слов
-                    const weight = word.length === 2 ? 1.5 : 1.2;
-                    score += weight;
-                    validWordCount++;
-                }
+            const upperWord = word.toUpperCase();
+            if (this.commonWords.has(upperWord)) {
+                // Больший вес для более коротких слов
+                const weight = word.length === 2 ? 1.5 : 1.0;
+                score += weight;
+                validWords++;
             }
         }
         
-        return validWordCount > 0 ? score / validWordCount : 0;
+        return validWords > 0 ? score / validWords : 0;
     }
 
-    _calculateImpossiblePairPenalty(text) {
-        let penalty = 0;
-        for (let i = 0; i < text.length - 1; i++) {
-            const pair = text.substr(i, 2).toUpperCase();
-            if (this.impossiblePairs.includes(pair)) {
-                penalty += 3.0;
-            }
-        }
-        return penalty;
-    }
-
-    _checkCaseConsistency(text) {
-        let caseChanges = 0;
-        let totalLetters = 0;
-        let prevWasUpper = null;
+    _calculateRepetitionScore(text) {
+        const trigrams = {};
+        let repetitions = 0;
         
-        for (const char of text) {
-            if (/[a-zA-Z]/.test(char)) {
-                const isUpper = char === char.toUpperCase();
-                if (prevWasUpper !== null && prevWasUpper !== isUpper) {
-                    caseChanges++;
-                }
-                prevWasUpper = isUpper;
-                totalLetters++;
+        for (let i = 0; i < text.length - 2; i++) {
+            const trigram = text.substr(i, 3);
+            if (trigrams[trigram]) {
+                repetitions++;
+            } else {
+                trigrams[trigram] = true;
             }
         }
         
-        if (totalLetters < 5) return 0;
-        return 1 - Math.min(caseChanges / (totalLetters / 2), 1);
-    }
-
-    highlightText(text) {
-        // Подсветка коротких слов и триграмм
-        return text.replace(/([a-zA-Z']+)/g, word => {
-            if (this.shortWords.has(word.toUpperCase())) {
-                return `<span class="highlight-word" data-score="${this.score(word)}">${word}</span>`;
-            }
-            return word;
-        });
+        // Нормализация (меньше повторений - лучше)
+        return 1 - Math.min(repetitions / (text.length / 3), 1);
     }
 }
 
 // Главный обработчик Worker
 let cipher, scorer;
 let currentTaskId = 0;
+let abortController = new AbortController();
 
 self.onmessage = function(e) {
     const {type, taskId, data} = e.data;
     
     // Отмена предыдущей задачи при получении новой
-    if (taskId && taskId !== currentTaskId) return;
+    if (taskId && taskId !== currentTaskId) {
+        abortController.abort();
+        abortController = new AbortController();
+    }
     currentTaskId = taskId;
 
     switch(type) {
         case 'INIT':
             cipher = new VigenereCipher(data.alphabet);
-            scorer = new ProfessionalTextScorer();
+            scorer = new AdvancedTextScorer();
             self.postMessage({type: 'READY'});
             break;
 
@@ -203,49 +231,113 @@ self.onmessage = function(e) {
             break;
 
         case 'STOP':
+            abortController.abort();
             self.close();
             break;
     }
 };
 
-function processBatch(batch, ciphertext, maxKeyLength, taskId) {
+async function processBatch(batch, ciphertext, maxKeyLength, taskId) {
+    const signal = abortController.signal;
     const results = [];
     let keysProcessed = 0;
+    const startTime = performance.now();
+    let lastUpdateTime = startTime;
 
-    for (const key of batch) {
-        if (taskId !== currentTaskId) return; // Проверка актуальности задачи
-        
-        try {
+    try {
+        for (const key of cipher.generateKeys(maxKeyLength)) {
+            if (signal.aborted) return;
+            
             const decrypted = cipher.decrypt(ciphertext, key);
             const score = scorer.score(decrypted);
             
-            if (score > -2) { // Порог отсечения
+            if (score > -5) { // Более мягкий порог
                 results.push({
                     key,
                     text: decrypted,
-                    highlighted: scorer.highlightText(decrypted),
                     score: parseFloat(score.toFixed(4))
                 });
             }
-        } catch (error) {
-            console.error(`Error processing key ${key}:`, error);
+            
+            keysProcessed++;
+            
+            // Отчет о прогрессе каждые 100мс или 100 ключей
+            const now = performance.now();
+            if (now - lastUpdateTime > 100 || keysProcessed % 100 === 0) {
+                self.postMessage({
+                    type: 'PROGRESS',
+                    processed: keysProcessed,
+                    taskId
+                });
+                lastUpdateTime = now;
+            }
         }
-        
-        keysProcessed++;
-        
-        // Отчет о прогрессе каждые 100 ключей
-        if (keysProcessed % 100 === 0) {
+
+        self.postMessage({
+            type: 'RESULTS',
+            results: results.sort((a, b) => b.score - a.score).slice(0, 20),
+            taskId
+        });
+    } catch (error) {
+        if (!signal.aborted) {
             self.postMessage({
-                type: 'PROGRESS',
-                processed: keysProcessed,
+                type: 'ERROR',
+                message: error.toString(),
                 taskId
             });
         }
     }
+}
+`;
 
-    self.postMessage({
-        type: 'RESULTS',
-        results,
-        taskId
+// Создаем Blob URL для воркера
+const blob = new Blob([workerCode], { type: 'application/javascript' });
+const workerUrl = URL.createObjectURL(blob);
+const worker = new Worker(workerUrl);
+
+// Подключение worker к основному коду
+worker.onmessage = function(e) {
+    const { type, results, processed, message } = e.data;
+    
+    switch(type) {
+        case 'READY':
+            console.log('Worker готов к работе');
+            break;
+            
+        case 'PROGRESS':
+            updateProgress(processed);
+            break;
+            
+        case 'RESULTS':
+            displayResults(results);
+            break;
+            
+        case 'ERROR':
+            showError(message);
+            break;
+    }
+};
+
+function startAttack() {
+    const alphabet = document.getElementById('alphabet').value;
+    const ciphertext = document.getElementById('ciphertext').value;
+    const maxKeyLength = parseInt(document.getElementById('keyLength').value);
+    
+    worker.postMessage({
+        type: 'INIT',
+        data: { alphabet }
     });
+    
+    worker.postMessage({
+        type: 'PROCESS',
+        taskId: Date.now(),
+        data: {
+            ciphertext,
+            maxKeyLength
+        }
+    });
+}
+
+function stopAttack() {
+    worker.postMessage({ type: 'STOP' });
 }
