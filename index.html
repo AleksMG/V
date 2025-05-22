@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Vigenère Breaker</title>
+    <title>Vigenère Breaker Pro</title>
     <style>
         :root {
             --primary: #3498db;
@@ -13,10 +13,12 @@
         }
 
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Roboto', sans-serif;
             background: var(--background);
             color: var(--text);
-            margin: 20px;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
         }
 
         .container {
@@ -33,10 +35,16 @@
             border-radius: 10px;
         }
 
-        input, button {
+        .form-group {
+            margin: 15px 0;
+        }
+
+        input[type="text"], textarea {
             width: 100%;
             padding: 10px;
-            margin: 5px 0;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid var(--primary);
+            color: var(--text);
             border-radius: 5px;
         }
 
@@ -44,7 +52,16 @@
             background: var(--primary);
             color: white;
             border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
             cursor: pointer;
+            width: 100%;
+            margin: 5px 0;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            opacity: 0.9;
         }
 
         #stopBtn {
@@ -53,103 +70,117 @@
 
         .progress {
             height: 15px;
-            background: #333;
+            background: rgba(0,0,0,0.3);
             border-radius: 10px;
-            margin: 15px 0;
+            margin: 20px 0;
         }
 
         .progress-bar {
             height: 100%;
             background: var(--secondary);
-            width: 0%;
+            border-radius: 10px;
             transition: width 0.3s;
         }
 
         .results {
-            background: rgba(0,0,0,0.3);
+            background: rgba(255,255,255,0.05);
             padding: 20px;
             border-radius: 10px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .result-item {
+            background: rgba(0,0,0,0.2);
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 3px solid var(--primary);
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="control-panel">
-            <h2>Настройки</h2>
+            <h2>Параметры</h2>
             
-            <input type="text" id="alphabet" 
-                   value="ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                   placeholder="Алфавит">
+            <div class="form-group">
+                <label>Алфавит:</label>
+                <input type="text" id="alphabet" value="ABCDEFGHIJKLMNOPQRSTUVWXYZ">
+            </div>
             
-            <div>
+            <div class="form-group">
                 <label>Количество ядер: <span id="workersValue">4</span></label>
                 <input type="range" id="workers" min="1" max="8" value="4">
             </div>
             
-            <button id="startBtn">Старт</button>
-            <button id="stopBtn" disabled>Стоп</button>
-            
-            <div class="progress">
-                <div class="progress-bar" id="progressBar"></div>
+            <div class="form-group">
+                <label>Макс. длина ключа: <span id="keyLengthValue">10</span></label>
+                <input type="range" id="keyLength" min="1" max="20" value="10">
             </div>
             
-            <div>
-                Проверено ключей: <span id="keysTested">0</span><br>
-                Скорость: <span id="speed">0</span> keys/sec
+            <button id="startBtn">Начать атаку</button>
+            <button id="stopBtn" disabled>Остановить</button>
+            
+            <div class="progress">
+                <div id="progressBar" class="progress-bar" style="width: 0%"></div>
+            </div>
+            
+            <div class="stats">
+                <div>Проверено ключей: <span id="keysTested">0</span></div>
+                <div>Скорость: <span id="speed">0</span> keys/sec</div>
+                <div>Осталось: <span id="timeLeft">-</span></div>
             </div>
         </div>
 
         <div class="results">
             <h2>Результаты</h2>
-            <textarea id="ciphertext" 
-                      placeholder="Вставьте шифртекст здесь..."
-                      rows="10"></textarea>
+            <textarea id="ciphertext" placeholder="Введите шифртекст..."></textarea>
             <div id="resultsContainer"></div>
         </div>
     </div>
 
     <script>
-        class Breaker {
+        class VigenereBreaker {
             constructor() {
                 this.workers = [];
-                this.keysTested = 0;
                 this.startTime = 0;
+                this.keysTested = 0;
+                this.totalKeys = 0;
+                this.isRunning = false;
             }
 
-            start(alphabet, workersCount, ciphertext, maxKeyLength) {
+            init(alphabet, workers, maxKeyLength) {
                 this.stop();
+                this.workers = Array.from({length: workers}, () => new Worker('worker.js'));
+                this.totalKeys = this.calculateTotalKeys(alphabet.length, maxKeyLength);
+            }
+
+            start(ciphertext, alphabet, maxKeyLength) {
+                this.isRunning = true;
                 this.startTime = performance.now();
-                this.workers = [];
                 
-                // Создаем воркеры
-                for(let i = 0; i < workersCount; i++) {
-                    const worker = new Worker('worker.js');
+                this.workers.forEach((worker, i) => {
                     worker.onmessage = (e) => this.handleMessage(e);
                     worker.postMessage({
                         type: 'START',
-                        alphabet,
                         ciphertext,
+                        alphabet,
                         maxKeyLength,
                         workerId: i
                     });
-                    this.workers.push(worker);
-                }
+                });
             }
 
             handleMessage(e) {
-                const { type, data } = e.data;
+                const {type, data} = e.data;
                 switch(type) {
                     case 'PROGRESS':
                         this.keysTested += data.keysTested;
                         this.updateUI();
                         break;
-                        
                     case 'RESULT':
                         this.addResult(data.result);
-                        break;
-                        
-                    case 'ERROR':
-                        console.error('Ошибка:', data.error);
                         break;
                 }
             }
@@ -157,39 +188,57 @@
             updateUI() {
                 const elapsed = (performance.now() - this.startTime) / 1000;
                 const speed = Math.floor(this.keysTested / elapsed);
+                const progress = (this.keysTested / this.totalKeys * 100).toFixed(2);
+                
+                document.getElementById('progressBar').style.width = `${progress}%`;
                 document.getElementById('keysTested').textContent = this.keysTested;
                 document.getElementById('speed').textContent = speed;
             }
 
             addResult(result) {
                 const div = document.createElement('div');
-                div.innerHTML = `<b>${result.key}</b> (score: ${result.score.toFixed(2)})`;
-                document.getElementById('resultsContainer').appendChild(div);
+                div.className = 'result-item';
+                div.innerHTML = `
+                    <strong>Ключ:</strong> ${result.key}<br>
+                    <strong>Оценка:</strong> ${result.score.toFixed(2)}<br>
+                    <pre>${result.text}</pre>
+                `;
+                document.getElementById('resultsContainer').prepend(div);
+            }
+
+            calculateTotalKeys(alphabetSize, maxLength) {
+                return Array.from({length: maxLength}, (_, i) => alphabetSize ** (i + 1))
+                    .reduce((a, b) => a + b, 0);
             }
 
             stop() {
                 this.workers.forEach(w => w.terminate());
                 this.workers = [];
+                this.isRunning = false;
             }
         }
 
         // Инициализация
-        const breaker = new Breaker();
+        const breaker = new VigenereBreaker();
         
         document.getElementById('workers').oninput = function() {
             document.getElementById('workersValue').textContent = this.value;
         };
 
+        document.getElementById('keyLength').oninput = function() {
+            document.getElementById('keyLengthValue').textContent = this.value;
+        };
+
         document.getElementById('startBtn').onclick = () => {
             const alphabet = document.getElementById('alphabet').value;
             const workers = parseInt(document.getElementById('workers').value);
+            const maxKeyLength = parseInt(document.getElementById('keyLength').value);
             const ciphertext = document.getElementById('ciphertext').value;
-            const maxKeyLength = 10;
             
+            breaker.init(alphabet, workers, maxKeyLength);
+            breaker.start(ciphertext, alphabet, maxKeyLength);
             document.getElementById('startBtn').disabled = true;
             document.getElementById('stopBtn').disabled = false;
-            
-            breaker.start(alphabet, workers, ciphertext, maxKeyLength);
         };
 
         document.getElementById('stopBtn').onclick = () => {
