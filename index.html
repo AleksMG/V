@@ -15,9 +15,14 @@
         </header>
 
         <div class="main-content">
-            <div class="control-panel">
+            <div class="input-panel">
                 <div class="panel-section">
-                    <h2>Parameters</h2>
+                    <h2>Input Parameters</h2>
+                    
+                    <div class="form-group">
+                        <label for="ciphertext">Ciphertext:</label>
+                        <textarea id="ciphertext" placeholder="Enter encrypted text here..."></textarea>
+                    </div>
                     
                     <div class="form-group">
                         <label for="alphabet">Alphabet:</label>
@@ -52,15 +57,15 @@
                 <div class="action-buttons">
                     <button id="startBtn" class="btn-primary">Start Attack</button>
                     <button id="stopBtn" class="btn-danger" disabled>Stop</button>
-                    <button id="clearBtn" class="btn-secondary">Clear Results</button>
+                    <button id="clearBtn" class="btn-secondary">Clear All</button>
                 </div>
-                
-                <div class="progress-section">
-                    <div class="progress-container">
-                        <div id="progressBar" class="progress-bar"></div>
-                    </div>
-                    <div class="progress-text">
-                        <span id="progressPercent">0%</span>
+            </div>
+
+            <div class="results-panel">
+                <div class="results-header">
+                    <h2>Decryption Results</h2>
+                    <div class="results-controls">
+                        <button id="exportBtn" class="btn-secondary">Export Results</button>
                     </div>
                 </div>
                 
@@ -83,19 +88,14 @@
                         <span id="bestScore" class="stat-value">-</span>
                     </div>
                 </div>
-            </div>
-
-            <div class="results-panel">
-                <div class="results-header">
-                    <h2>Results</h2>
-                    <div class="results-controls">
-                        <button id="exportBtn" class="btn-secondary">Export Results</button>
-                    </div>
-                </div>
                 
-                <div class="input-section">
-                    <label for="ciphertext">Ciphertext:</label>
-                    <textarea id="ciphertext" placeholder="Enter ciphertext here..."></textarea>
+                <div class="progress-section">
+                    <div class="progress-container">
+                        <div id="progressBar" class="progress-bar"></div>
+                    </div>
+                    <div class="progress-text">
+                        <span id="progressPercent">0%</span>
+                    </div>
                 </div>
                 
                 <div id="resultsContainer" class="results-container"></div>
