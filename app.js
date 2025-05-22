@@ -10,11 +10,25 @@ class VigenereBreaker {
         this.currentBatch = 0;
         this.batches = [];
         this.results = [];
+        this.alphabet = '';
+        this.maxKeyLength = 0;
+        this.workerCount = 0;
+        this.ciphertext = '';
     }
 
     init(alphabet, workerCount, maxKeyLength) {
         this.stop();
         
+        // Validate alphabet
+        if (!alphabet || alphabet.length === 0) {
+            throw new Error("Alphabet cannot be empty");
+        }
+        
+        const uniqueChars = new Set(alphabet.toUpperCase().split(''));
+        if (uniqueChars.size !== alphabet.length) {
+            throw new Error("Alphabet contains duplicate characters");
+        }
+
         this.alphabet = alphabet.toUpperCase();
         this.workerCount = workerCount;
         this.maxKeyLength = maxKeyLength;
@@ -24,17 +38,15 @@ class VigenereBreaker {
         this.currentBatch = 0;
         this.results = [];
         
-        // Calculate total keys for progress tracking
         this.totalKeys = this.calculateTotalKeys(this.alphabet.length, maxKeyLength);
         
-        // Initialize web workers
         this.workers = Array.from({ length: workerCount }, () => {
             const worker = new Worker('worker.js');
             worker.onmessage = (e) => this.handleWorkerMessage(e);
+            worker.onerror = (e) => this.handleWorkerError(e);
             return worker;
         });
         
-        // Generate key batches
         this.batches = this.generateKeyBatches(this.alphabet, maxKeyLength, workerCount * 100);
     }
 
@@ -50,7 +62,6 @@ class VigenereBreaker {
         const batches = [];
         let currentBatch = [];
         
-        // Generate keys of length 1 first, then 2, etc.
         for (let length = 1; length <= maxLength; length++) {
             const keys = this.generateKeysOfLength(alphabet, length);
             
@@ -94,9 +105,11 @@ class VigenereBreaker {
         this.isRunning = true;
         this.startTime = performance.now();
         this.ciphertext = ciphertext;
-        this.scoringMethod = scoringMethod;
-        this.knownPlaintext = knownPlaintext;
         
+        if (!ciphertext || ciphertext.trim().length === 0) {
+            throw new Error("Ciphertext cannot be empty");
+        }
+
         // Initialize all workers
         this.workers.forEach((worker, index) => {
             worker.postMessage({
@@ -107,16 +120,21 @@ class VigenereBreaker {
             
             this.workerProgress[index] = {
                 keysProcessed: 0,
-                lastUpdate: performance.now()
+                lastUpdate: performance.now(),
+                busy: false
             };
         });
         
         // Start processing batches
-        this.distributeBatches();
+        this.distributeBatches(scoringMethod, knownPlaintext);
     }
 
-    distributeBatches() {
+    distributeBatches(scoringMethod, knownPlaintext) {
         if (!this.isRunning || this.currentBatch >= this.batches.length) {
+            if (this.currentBatch >= this.batches.length) {
+                this.stop();
+                this.updateUI();
+            }
             return;
         }
         
@@ -129,7 +147,7 @@ class VigenereBreaker {
         
         if (availableWorkers.length === 0) {
             // All workers are busy, check again soon
-            setTimeout(() => this.distributeBatches(), 100);
+            setTimeout(() => this.distributeBatches(scoringMethod, knownPlaintext), 100);
             return;
         }
         
@@ -147,43 +165,56 @@ class VigenereBreaker {
                 type: 'PROCESS',
                 batch,
                 ciphertext: this.ciphertext,
-                scoringMethod: this.scoringMethod,
-                knownPlaintext: this.knownPlaintext,
+                scoringMethod,
+                knownPlaintext,
                 batchId: this.currentBatch - 1
             });
         }
         
         // Continue distributing batches
-        setTimeout(() => this.distributeBatches(), 50);
+        setTimeout(() => this.distributeBatches(scoringMethod, knownPlaintext), 50);
     }
 
     handleWorkerMessage(event) {
         const { type, data } = event.data;
         
-        switch (type) {
-            case 'READY':
-                // Worker is ready
-                break;
-                
-            case 'PROGRESS':
-                this.handleProgressUpdate(data);
-                break;
-                
-            case 'RESULT':
-                this.handleResults(data);
-                break;
-                
-            case 'ERROR':
-                console.error('Worker error:', data);
-                break;
-                
-            default:
-                console.warn('Unknown message type:', type);
+        try {
+            switch (type) {
+                case 'READY':
+                    // Worker is ready
+                    break;
+                    
+                case 'PROGRESS':
+                    this.handleProgressUpdate(data);
+                    break;
+                    
+                case 'RESULT':
+                    this.handleResults(data);
+                    break;
+                    
+                case 'ERROR':
+                    console.error('Worker error:', data);
+                    this.showError(`Worker error: ${data.message}`);
+                    this.stop();
+                    break;
+                    
+                default:
+                    console.warn('Unknown message type:', type);
+            }
+        } catch (error) {
+            console.error('Error handling worker message:', error);
+            this.stop();
         }
     }
 
+    handleWorkerError(event) {
+        console.error('Worker error:', event);
+        this.showError('Worker encountered an error');
+        this.stop();
+    }
+
     handleProgressUpdate(data) {
-        const { workerId, processed, batchId } = data;
+        const { workerId, processed } = data;
         
         // Update worker progress
         this.workerProgress[workerId] = {
@@ -274,6 +305,17 @@ class VigenereBreaker {
         });
     }
 
+    showError(message) {
+        const errorElement = document.createElement('div');
+        errorElement.className = 'error-message';
+        errorElement.textContent = message;
+        
+        const panel = document.querySelector('.input-panel');
+        panel.insertBefore(errorElement, panel.firstChild);
+        
+        setTimeout(() => errorElement.remove(), 5000);
+    }
+
     stop() {
         this.isRunning = false;
         
@@ -283,10 +325,17 @@ class VigenereBreaker {
         
         // Reset progress
         this.workerProgress = {};
+        
+        // Update UI
+        document.getElementById('startBtn').disabled = false;
+        document.getElementById('stopBtn').disabled = true;
     }
 
     exportResults() {
-        if (this.results.length === 0) return;
+        if (this.results.length === 0) {
+            this.showError("No results to export");
+            return;
+        }
         
         const data = {
             ciphertext: this.ciphertext,
@@ -326,32 +375,30 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     document.getElementById('startBtn').addEventListener('click', () => {
-        const alphabet = document.getElementById('alphabet').value;
-        const workers = parseInt(document.getElementById('workers').value);
-        const maxKeyLength = parseInt(document.getElementById('keyLength').value);
-        const ciphertext = document.getElementById('ciphertext').value;
-        const scoringMethod = document.getElementById('scoringMethod').value;
-        const knownPlaintext = document.getElementById('knownPlaintext').value;
-        
-        if (!ciphertext.trim()) {
-            alert('Please enter ciphertext to analyze');
-            return;
+        try {
+            const alphabet = document.getElementById('alphabet').value;
+            const workers = parseInt(document.getElementById('workers').value);
+            const maxKeyLength = parseInt(document.getElementById('keyLength').value);
+            const ciphertext = document.getElementById('ciphertext').value;
+            const scoringMethod = document.getElementById('scoringMethod').value;
+            const knownPlaintext = document.getElementById('knownPlaintext').value;
+            
+            breaker.init(alphabet, workers, maxKeyLength);
+            breaker.start(ciphertext, scoringMethod, knownPlaintext);
+            
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+        } catch (error) {
+            breaker.showError(error.message);
         }
-        
-        breaker.init(alphabet, workers, maxKeyLength);
-        breaker.start(ciphertext, scoringMethod, knownPlaintext);
-        
-        document.getElementById('startBtn').disabled = true;
-        document.getElementById('stopBtn').disabled = false;
     });
     
     document.getElementById('stopBtn').addEventListener('click', () => {
         breaker.stop();
-        document.getElementById('startBtn').disabled = false;
-        document.getElementById('stopBtn').disabled = true;
     });
     
     document.getElementById('clearBtn').addEventListener('click', () => {
+        breaker.stop();
         document.getElementById('resultsContainer').innerHTML = '';
         document.getElementById('ciphertext').value = '';
         document.getElementById('keysTested').textContent = '0';
