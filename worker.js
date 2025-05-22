@@ -1,26 +1,31 @@
 // worker.js
+const workerCode = `
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
-class VigenereMaster {
-  constructor() {
-    // Топ-30 биграмм английского языка
-    this.BIGRAMS = new Set([
-      'TH','HE','IN','EN','NT','RE','ER','AN','TI','ES',
-      'ON','AT','SE','ND','OR','AR','AL','TE','CO','DE',
-      'TO','RA','ET','ED','IT','SA','EM','RO','HA','VE'
-    ]);
-
-    // Все допустимые 2-буквенные слова
-    this.TWO_LETTER_WORDS = new Set([
-      'OF','TO','IN','IT','IS','BE','AS','AT','SO','WE',
-      'HE','BY','OR','ON','DO','IF','ME','MY','UP','AN'
-    ]);
-
-    // Топ-20 частых слов
-    this.TOP_WORDS = new Set([
-      'THE','AND','FOR','ARE','BUT','NOT','YOU','ALL','ANY','CAN',
-      'HAD','HER','WAS','ONE','OUR','OUT','DAY','GET','HAS','HIM'
-    ]);
+class VigenereAnalyzer {
+  constructor(alphabet) {
+    this.alphabet = alphabet.toUpperCase();
+    this.charToIndex = new Map([...this.alphabet].map((c, i) => [c, i]));
+    
+    // Частоты для индекса совпадений
+    this.englishFreq = {
+      'A':0.08167,'B':0.01492,'C':0.02782,'D':0.04253,'E':0.12702,
+      'F':0.02228,'G':0.02015,'H':0.06094,'I':0.06966,'J':0.00153,
+      'K':0.00772,'L':0.04025,'M':0.02406,'N':0.06749,'O':0.07507,
+      'P':0.01929,'Q':0.00095,'R':0.05987,'S':0.06327,'T':0.09056,
+      'U':0.02758,'V':0.00978,'W':0.02360,'X':0.00150,'Y':0.01974,'Z':0.00074
+    };
+    
+    // Квадграммы
+    this.quadgrams = {
+      'TION':0.031404,'THER':0.026642,'NTHE':0.026317,'THAT':0.025347,
+      'OFTH':0.024598,'FTHE':0.024373,'THES':0.023390,'WITH':0.023163,
+      'INTH':0.021318,'ATIO':0.020796,'OTHE':0.020626,'TTHA':0.019758,
+      'NDTH':0.019578,'ETHE':0.019373,'TOTH':0.018921,'DTHE':0.018673
+    };
+    
+    // Нормализация квадграмм
+    this.quadgramTotal = Object.values(this.quadgrams).reduce((a,b) => a+b, 0);
   }
 
   decrypt(ciphertext, key) {
@@ -28,10 +33,10 @@ class VigenereMaster {
     const keyUpper = key.toUpperCase();
     for (let i = 0; i < ciphertext.length; i++) {
       const c = ciphertext[i].toUpperCase();
-      const cIndex = ALPHABET.indexOf(c);
-      if (cIndex >= 0) {
-        const kIndex = ALPHABET.indexOf(keyUpper[i % keyUpper.length]);
-        plaintext += ALPHABET[(cIndex - kIndex + 26) % 26];
+      const cIdx = this.charToIndex.get(c);
+      if (cIdx !== undefined) {
+        const kIdx = this.charToIndex.get(keyUpper[i % keyUpper.length]);
+        plaintext += this.alphabet[(cIdx - kIdx + this.alphabet.length) % this.alphabet.length];
       } else {
         plaintext += c;
       }
@@ -39,99 +44,145 @@ class VigenereMaster {
     return plaintext;
   }
 
-  calculateProbability(text) {
-    const cleanText = text.replace(/[^A-Z]/g, '');
-    if (cleanText.length < 5) return 0;
-
-    // 1. Проверка биграмм (60% оценки)
-    let bigramHits = 0;
-    for (let i = 0; i < cleanText.length - 1; i++) {
-      if (this.BIGRAMS.has(cleanText.substr(i, 2))) bigramHits++;
-    }
-    const bigramPercent = Math.min(60, (bigramHits / (cleanText.length - 1)) * 120);
-
-    // 2. Проверка слов (40% оценки)
-    const words = text.split(/[^A-Za-z]+/).filter(w => w.length > 0);
-    let wordScore = 0;
+  // Метод 1: Quadgram анализ (0-100%)
+  quadgramScore(text) {
+    const clean = text.replace(/[^A-Z]/g, '');
+    if (clean.length < 4) return 0;
     
-    words.forEach(word => {
-      const upperWord = word.toUpperCase();
-      if (upperWord.length === 2 && this.TWO_LETTER_WORDS.has(upperWord)) {
-        wordScore += 8; // +8% за каждое 2-буквенное слово
-      }
-      if (this.TOP_WORDS.has(upperWord)) {
-        wordScore += 15; // +15% за каждое ключевое слово
-      }
-    });
-
-    const totalScore = Math.min(100, bigramPercent + wordScore);
-    return Math.round(totalScore);
+    let score = 0;
+    for (let i = 0; i < clean.length - 3; i++) {
+      const quad = clean.substr(i, 4);
+      const prob = this.quadgrams[quad] || 1e-10;
+      score += Math.log10(prob / this.quadgramTotal);
+    }
+    
+    // Нормализация к 0-100%
+    const min = -50; // Примерное минимальное значение
+    const max = -10;  // Примерное максимальное значение
+    return Math.min(100, Math.max(0, ((score - min) / (max - min)) * 100));
   }
 
-  crack(ciphertext, maxKeyLength = 3) {
-    const results = [];
-    const ciphertextUpper = ciphertext.toUpperCase();
+  // Метод 2: Индекс совпадений (0-100%)
+  indexOfCoincidence(text) {
+    const clean = text.replace(/[^A-Z]/g, '');
+    if (clean.length < 2) return 0;
+    
+    const counts = new Map();
+    for (const c of clean) {
+      counts.set(c, (counts.get(c) || 0) + 1);
+    }
+    
+    let sum = 0;
+    for (const count of counts.values()) {
+      sum += count * (count - 1);
+    }
+    
+    const ic = sum / (clean.length * (clean.length - 1));
+    const englishIC = 0.0667;
+    
+    // Преобразование в процент близости к английскому
+    return Math.min(100, Math.max(0, (1 - Math.abs(ic - englishIC) / 0.02) * 100));
+  }
 
-    // Генератор ключей
-    function* generateKeys(length) {
-      const arr = Array(length).fill(0);
-      while (true) {
-        yield arr.map(i => ALPHABET[i]).join('');
-        let j = length - 1;
-        while (j >= 0 && ++arr[j] === 26) {
-          arr[j] = 0;
-          j--;
-        }
-        if (j < 0) break;
+  // Метод 3: Хи-квадрат (0-100%)
+  chiSquared(text) {
+    const clean = text.replace(/[^A-Z]/g, '');
+    if (clean.length < 5) return 0;
+    
+    const counts = new Map();
+    for (const c of clean) {
+      counts.set(c, (counts.get(c) || 0) + 1);
+    }
+    
+    let chi2 = 0;
+    for (const [char, freq] of Object.entries(this.englishFreq)) {
+      const expected = freq * clean.length;
+      const observed = counts.get(char) || 0;
+      chi2 += Math.pow(observed - expected, 2) / expected;
+    }
+    
+    // Преобразование в процент (меньше хи-квадрат = лучше)
+    const maxChi2 = 150; // Эмпирически подобранное значение
+    return Math.min(100, Math.max(0, (1 - chi2 / maxChi2) * 100));
+  }
+
+  // Комбинированная оценка
+  combinedScore(text) {
+    const q = this.quadgramScore(text);
+    const ic = this.indexOfCoincidence(text);
+    const chi = this.chiSquared(text);
+    return (q * 0.5 + ic * 0.3 + chi * 0.2);
+  }
+
+  // Генерация ключей
+  *generateKeys(maxLength) {
+    function* generate(prefix) {
+      if (prefix.length === maxLength) {
+        yield prefix;
+        return;
+      }
+      for (const char of ALPHABET) {
+        yield* generate(prefix + char);
       }
     }
-
-    // Перебор ключей
-    for (let len = 1; len <= maxKeyLength; len++) {
-      for (const key of generateKeys(len)) {
-        const plaintext = this.decrypt(ciphertextUpper, key);
-        const probability = this.calculateProbability(plaintext);
-        
-        if (probability >= 40) { // Порог приемлемости
-          results.push({
-            key,
-            text: plaintext,
-            probability, // Процент вероятности (40-100)
-            matches: {
-              bigrams: (plaintext.match(/[A-Z]{2}/g) || []).filter(b => this.BIGRAMS.has(b)).length,
-              words: words.filter(w => this.TOP_WORDS.has(w.toUpperCase())).length
-            }
-          });
-
-          if (probability >= 90) break; // Прерывание при отличном результате
-        }
-      }
-    }
-
-    return results.sort((a, b) => b.probability - a.probability).slice(0, 5);
+    yield* generate('');
   }
 }
 
-// Обработчик сообщений
 self.onmessage = function(e) {
-  const { ciphertext, maxKeyLength } = e.data;
-  const solver = new VigenereMaster();
-  const startTime = performance.now();
+  const { type, taskId, data } = e.data;
   
-  try {
-    const results = solver.crack(ciphertext, maxKeyLength);
-    const timeTaken = ((performance.now() - startTime)/1000).toFixed(2);
+  if (type === 'INIT') {
+    const analyzer = new VigenereAnalyzer(data.alphabet);
+    self.postMessage({ type: 'READY' });
+    return;
+  }
+
+  if (type === 'PROCESS') {
+    const { ciphertext, maxKeyLength, method } = data;
+    const analyzer = new VigenereAnalyzer('ABCDEFGHIJKLMNOPQRSTUVWXYZ');
+    const results = [];
+    let processed = 0;
+    
+    for (const key of analyzer.generateKeys(maxKeyLength)) {
+      const plaintext = analyzer.decrypt(ciphertext, key);
+      let score;
+      
+      switch(method) {
+        case 'quadgrams': score = analyzer.quadgramScore(plaintext); break;
+        case 'ic': score = analyzer.indexOfCoincidence(plaintext); break;
+        case 'chi2': score = analyzer.chiSquared(plaintext); break;
+        case 'combined': score = analyzer.combinedScore(plaintext); break;
+        default: score = analyzer.quadgramScore(plaintext);
+      }
+      
+      if (score > 30) { // Порог 30%
+        results.push({
+          key,
+          text: plaintext,
+          score: parseFloat(score.toFixed(2))
+        });
+      }
+      
+      processed++;
+      if (processed % 100 === 0) {
+        self.postMessage({
+          type: 'PROGRESS',
+          processed,
+          taskId
+        });
+      }
+    }
     
     self.postMessage({
       type: 'RESULTS',
-      results: results.length > 0 ? results : [],
-      time: timeTaken + ' сек',
-      error: results.length === 0 ? 'Не найдено подходящих вариантов' : null
-    });
-  } catch (error) {
-    self.postMessage({
-      type: 'ERROR',
-      error: 'Ошибка при обработке: ' + error.message
+      results: results.sort((a, b) => b.score - a.score).slice(0, 10),
+      taskId
     });
   }
 };
+`;
+
+// Создаем Worker
+const blob = new Blob([workerCode], { type: 'application/javascript' });
+const worker = new Worker(URL.createObjectURL(blob));
