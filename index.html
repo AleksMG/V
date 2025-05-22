@@ -1,273 +1,220 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vigenere Cracker Pro</title>
+    <title>Vigenère Breaker Pro</title>
     <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --accent: #e74c3c;
+            --background: #ecf0f1;
+        }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 1000px;
+            font-family: 'Arial', sans-serif;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
-            background-color: #f5f5f5;
+            background: var(--background);
         }
-        .container {
+
+        .grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 300px 1fr;
             gap: 20px;
         }
-        .panel {
+
+        .settings-card {
             background: white;
             padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
+
+        .progress {
+            height: 20px;
+            background: #eee;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--secondary);
+            transition: width 0.3s;
+        }
+
         textarea {
             width: 100%;
-            min-height: 100px;
-            margin-bottom: 10px;
+            height: 150px;
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 4px;
+            margin: 10px 0;
         }
+
         button {
-            background: #4CAF50;
+            background: var(--primary);
             color: white;
             border: none;
-            padding: 10px 15px;
+            padding: 10px 20px;
             border-radius: 4px;
             cursor: pointer;
-            margin-right: 10px;
+            margin: 5px;
         }
+
         button:disabled {
-            background: #cccccc;
+            background: #95a5a6;
         }
-        button.stop {
-            background: #f44336;
-        }
-        .progress {
-            margin: 20px 0;
-            background: #e0e0e0;
+
+        .result-card {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
             border-radius: 4px;
-            height: 20px;
-        }
-        .progress-bar {
-            background: #4CAF50;
-            height: 100%;
-            border-radius: 4px;
-            width: 0%;
-            transition: width 0.3s;
-        }
-        .result {
-            margin-top: 10px;
-            padding: 10px;
-            background: #f9f9f9;
-            border-radius: 4px;
-        }
-        .settings {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin: 15px 0;
-        }
-        .setting-item {
-            margin-bottom: 10px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        input[type="range"] {
-            width: 100%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
     </style>
 </head>
 <body>
-    <h1>Vigenere Cracker Professional</h1>
+    <h1>Vigenère Cipher Breaker</h1>
     
-    <div class="container">
-        <div class="panel">
-            <h2>Input</h2>
-            <label for="ciphertext">Ciphertext:</label>
-            <textarea id="ciphertext" placeholder="Enter encrypted text here"></textarea>
+    <div class="grid">
+        <div class="settings-card">
+            <h3>Parameters</h3>
             
-            <label for="known-text">Known Plaintext (optional):</label>
-            <input type="text" id="known-text" placeholder="Known part of text">
+            <label>Custom Alphabet:</label>
+            <input type="text" id="alphabet" value="ABCDEFGHIJKLMNOPQRSTUVWXYZ">
             
-            <div class="settings">
-                <div class="setting-item">
-                    <label for="key-length">Max Key Length: <span id="key-length-value">5</span></label>
-                    <input type="range" id="key-length" min="1" max="10" value="5">
-                </div>
-                
-                <div class="setting-item">
-                    <label for="workers">Workers: <span id="workers-value">4</span></label>
-                    <input type="range" id="workers" min="1" max="8" value="4">
-                </div>
+            <div class="param">
+                <label>Workers: <span id="workersValue">4</span></label>
+                <input type="range" id="workers" min="1" max="8" value="4">
             </div>
             
-            <button id="start-btn">Start Cracking</button>
-            <button id="stop-btn" class="stop" disabled>Stop</button>
+            <div class="param">
+                <label>Max Key Length: <span id="keyLengthValue">5</span></label>
+                <input type="range" id="keyLength" min="1" max="10" value="5">
+            </div>
+            
+            <button id="startBtn">Start</button>
+            <button id="stopBtn" disabled>Stop</button>
             
             <div class="progress">
-                <div id="progress-bar" class="progress-bar"></div>
+                <div id="progressBar" class="progress-bar" style="width: 0%"></div>
             </div>
             
-            <div id="status">Ready</div>
-            <div>Keys tested: <span id="keys-tested">0</span></div>
+            <div>Keys tested: <span id="keysTested">0</span></div>
             <div>Speed: <span id="speed">0</span> keys/sec</div>
         </div>
-        
-        <div class="panel">
-            <h2>Results</h2>
+
+        <div>
+            <h3>Input</h3>
+            <textarea id="ciphertext" placeholder="Ciphertext..."></textarea>
+            
+            <h3>Results</h3>
             <div id="results"></div>
         </div>
     </div>
 
     <script>
-        class VigenereCracker {
+        class BreakerManager {
             constructor() {
-                this.worker = new Worker('worker.js');
+                this.workers = [];
                 this.isRunning = false;
                 this.startTime = 0;
                 this.keysTested = 0;
-                this.totalKeys = 0;
-                this.worker.onmessage = (e) => this.handleWorkerMessage(e);
-                this.worker.onerror = (e) => this.handleWorkerError(e);
             }
 
-            start(ciphertext, options) {
-                if (this.isRunning) return;
-                
+            async start(ciphertext, alphabet, workers, maxKeyLength) {
+                this.stop();
                 this.isRunning = true;
                 this.startTime = performance.now();
-                this.keysTested = 0;
                 
-                this.worker.postMessage({
-                    type: 'START',
-                    ciphertext,
-                    options
+                this.workers = Array.from({length: workers}, () => {
+                    const worker = new Worker('worker.js');
+                    worker.onmessage = (e) => this.handleMessage(e);
+                    worker.postMessage({
+                        type: 'INIT',
+                        alphabet,
+                        ciphertext,
+                        maxKeyLength
+                    });
+                    return worker;
                 });
             }
 
-            stop() {
-                if (!this.isRunning) return;
-                
-                this.worker.postMessage({ type: 'STOP' });
-                this.isRunning = false;
-                return true;
-            }
-
-            handleWorkerMessage(e) {
+            handleMessage(e) {
                 const { type, data } = e.data;
-                
-                switch (type) {
+                switch(type) {
                     case 'PROGRESS':
-                        this.keysTested = data.keysTested;
-                        this.updateProgress();
+                        this.keysTested += data.keysTested;
+                        this.updateUI();
                         break;
                         
                     case 'RESULT':
-                        this.keysTested = data.keysTested;
-                        this.displayResult(data.result);
-                        this.updateProgress();
-                        break;
-                        
-                    case 'COMPLETE':
-                        this.isRunning = false;
-                        document.getElementById('start-btn').disabled = false;
-                        document.getElementById('stop-btn').disabled = true;
-                        document.getElementById('status').textContent = 'Complete';
-                        break;
-                        
-                    case 'ERROR':
-                        console.error('Worker error:', data.error);
-                        this.isRunning = false;
-                        document.getElementById('start-btn').disabled = false;
-                        document.getElementById('stop-btn').disabled = true;
-                        document.getElementById('status').textContent = 'Error: ' + data.error;
+                        this.addResult(data.result);
                         break;
                 }
             }
 
-            handleWorkerError(e) {
-                console.error('Worker fatal error:', e);
-                this.isRunning = false;
-                document.getElementById('start-btn').disabled = false;
-                document.getElementById('stop-btn').disabled = true;
-                document.getElementById('status').textContent = 'Worker crashed';
-            }
-
-            updateProgress() {
+            updateUI() {
                 const elapsed = (performance.now() - this.startTime) / 1000;
                 const speed = Math.round(this.keysTested / elapsed);
-                const progress = this.totalKeys > 0 ? (this.keysTested / this.totalKeys) * 100 : 0;
                 
-                document.getElementById('progress-bar').style.width = `${progress}%`;
-                document.getElementById('keys-tested').textContent = this.keysTested.toLocaleString();
-                document.getElementById('speed').textContent = speed.toLocaleString();
+                document.getElementById('keysTested').textContent = 
+                    this.keysTested.toLocaleString();
+                document.getElementById('speed').textContent = speed;
             }
 
-            displayResult(result) {
-                const resultsDiv = document.getElementById('results');
-                const resultDiv = document.createElement('div');
-                resultDiv.className = 'result';
-                resultDiv.innerHTML = `
-                    <h3>Key: ${result.key} (Score: ${result.score.toFixed(2)})</h3>
-                    <p>${result.plaintext}</p>
+            addResult(result) {
+                const div = document.createElement('div');
+                div.className = 'result-card';
+                div.innerHTML = `
+                    <strong>Key:</strong> ${result.key}<br>
+                    <strong>Score:</strong> ${result.score.toFixed(2)}<br>
+                    <pre>${result.text}</pre>
                 `;
-                resultsDiv.prepend(resultDiv);
+                document.getElementById('results').prepend(div);
+            }
+
+            stop() {
+                this.isRunning = false;
+                this.workers.forEach(w => w.terminate());
+                this.workers = [];
             }
         }
 
         // UI Setup
-        document.addEventListener('DOMContentLoaded', () => {
-            const cracker = new VigenereCracker();
-            const startBtn = document.getElementById('start-btn');
-            const stopBtn = document.getElementById('stop-btn');
+        const manager = new BreakerManager();
+        
+        document.getElementById('workers').oninput = function() {
+            document.getElementById('workersValue').textContent = this.value;
+        };
+        
+        document.getElementById('keyLength').oninput = function() {
+            document.getElementById('keyLengthValue').textContent = this.value;
+        };
+
+        document.getElementById('startBtn').onclick = () => {
+            const ciphertext = document.getElementById('ciphertext').value;
+            const alphabet = document.getElementById('alphabet').value;
+            const workers = parseInt(document.getElementById('workers').value);
+            const maxKeyLength = parseInt(document.getElementById('keyLength').value);
             
-            // Update range values
-            document.getElementById('key-length').addEventListener('input', (e) => {
-                document.getElementById('key-length-value').textContent = e.target.value;
-            });
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+            document.getElementById('results').innerHTML = '';
             
-            document.getElementById('workers').addEventListener('input', (e) => {
-                document.getElementById('workers-value').textContent = e.target.value;
-            });
-            
-            // Start cracking
-            startBtn.addEventListener('click', () => {
-                const ciphertext = document.getElementById('ciphertext').value;
-                if (!ciphertext) {
-                    alert('Please enter ciphertext');
-                    return;
-                }
-                
-                const options = {
-                    maxKeyLength: parseInt(document.getElementById('key-length').value),
-                    workers: parseInt(document.getElementById('workers').value),
-                    knownPlaintext: document.getElementById('known-text').value
-                };
-                
-                startBtn.disabled = true;
-                stopBtn.disabled = false;
-                document.getElementById('status').textContent = 'Running...';
-                document.getElementById('results').innerHTML = '';
-                
-                cracker.start(ciphertext, options);
-            });
-            
-            // Stop cracking
-            stopBtn.addEventListener('click', () => {
-                if (cracker.stop()) {
-                    document.getElementById('status').textContent = 'Stopped';
-                    startBtn.disabled = false;
-                    stopBtn.disabled = true;
-                }
-            });
-        });
+            manager.start(ciphertext, alphabet, workers, maxKeyLength);
+        };
+
+        document.getElementById('stopBtn').onclick = () => {
+            manager.stop();
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+        };
     </script>
 </body>
 </html>
