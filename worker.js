@@ -1,84 +1,83 @@
-const workerCode = `
+// worker.js
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
-class VigenereUltra {
+class VigenereMaster {
   constructor() {
-    // Полный набор биграмм английского языка (топ-50)
+    // Топ-30 биграмм английского языка
     this.BIGRAMS = new Set([
       'TH','HE','IN','EN','NT','RE','ER','AN','TI','ES',
       'ON','AT','SE','ND','OR','AR','AL','TE','CO','DE',
-      'TO','RA','ET','ED','IT','SA','EM','RO','HA','VE',
-      'LE','ME','AS','HI','RI','NE','EA','SI','OM','UR',
-      'ST','IO','OU','HI','IS','EA','SO','US','UN','LO'
+      'TO','RA','ET','ED','IT','SA','EM','RO','HA','VE'
     ]);
 
-    // Все допустимые 2-буквенные слова английского языка
+    // Все допустимые 2-буквенные слова
     this.TWO_LETTER_WORDS = new Set([
-      'OF','TO','IN','IT','IS','BE','AS','AT','SO','WE','HE','BY','OR',
-      'ON','DO','IF','ME','MY','UP','AN','GO','NO','US','AM','AH','AY',
-      'BO','DA','EX','HA','HI','HO','ID','JA','KA','LA','LI','LO','MA',
-      'MI','MU','NA','NE','NU','OM','OP','OS','OW','OX','OY','PA','PE',
-      'PI','RE','SH','SI','TA','TI','UH','UM','UN','WO','XI','XU','YA',
-      'YE','YO','ZA','AD','AE','AG','AI','AL','AR','AW','AX','BA','BI',
-      'DE','ED','EF','EH','EL','EM','ER','ET','FA','FE','GI','GU','HE',
-      'HM','JO','KO','KY','MO','OB','OD','OE','OF','OH','OI','OK','OM',
-      'OO','OU','OW','OY','PO','QI','ST','UG','YU','ZA','ZE','ZO'
+      'OF','TO','IN','IT','IS','BE','AS','AT','SO','WE',
+      'HE','BY','OR','ON','DO','IF','ME','MY','UP','AN'
     ]);
 
-    this.TOP_WORDS = new Set(['THE','AND','FOR','ARE','BUT','NOT','YOU','ALL','ANY','CAN']);
+    // Топ-20 частых слов
+    this.TOP_WORDS = new Set([
+      'THE','AND','FOR','ARE','BUT','NOT','YOU','ALL','ANY','CAN',
+      'HAD','HER','WAS','ONE','OUR','OUT','DAY','GET','HAS','HIM'
+    ]);
   }
 
-  // Ультрабыстрая дешифровка
-  decrypt(ct, key) {
-    let pt = '';
-    const kLen = key.length;
-    const kArr = Array.from(key.toUpperCase()).map(c => ALPHABET.indexOf(c));
-    
-    for (let i = 0; i < ct.length; i++) {
-      const c = ALPHABET.indexOf(ct[i]);
-      if (c >= 0) {
-        const k = kArr[i % kLen];
-        pt += ALPHABET[(c - k + 26) % 26];
+  decrypt(ciphertext, key) {
+    let plaintext = '';
+    const keyUpper = key.toUpperCase();
+    for (let i = 0; i < ciphertext.length; i++) {
+      const c = ciphertext[i].toUpperCase();
+      const cIndex = ALPHABET.indexOf(c);
+      if (cIndex >= 0) {
+        const kIndex = ALPHABET.indexOf(keyUpper[i % keyUpper.length]);
+        plaintext += ALPHABET[(cIndex - kIndex + 26) % 26];
       } else {
-        pt += ct[i];
+        plaintext += c;
       }
     }
-    return pt;
+    return plaintext;
   }
 
-  // Быстрая проверка биграмм и слов
-  isMeaningful(text) {
-    const clean = text.replace(/[^A-Z]/g, '');
-    if (clean.length < 4) return false;
+  calculateProbability(text) {
+    const cleanText = text.replace(/[^A-Z]/g, '');
+    if (cleanText.length < 5) return 0;
 
-    // Проверка биграмм
-    let bigramScore = 0;
-    for (let i = 0; i < clean.length - 1; i++) {
-      if (this.BIGRAMS.has(clean.substr(i, 2))) bigramScore++;
+    // 1. Проверка биграмм (60% оценки)
+    let bigramHits = 0;
+    for (let i = 0; i < cleanText.length - 1; i++) {
+      if (this.BIGRAMS.has(cleanText.substr(i, 2))) bigramHits++;
     }
-    if (bigramScore / (clean.length - 1) < 0.3) return false;
+    const bigramPercent = Math.min(60, (bigramHits / (cleanText.length - 1)) * 120);
 
-    // Проверка 2-буквенных слов
+    // 2. Проверка слов (40% оценки)
     const words = text.split(/[^A-Za-z]+/).filter(w => w.length > 0);
-    const twoLetterMatches = words.filter(w => 
-      w.length === 2 && this.TWO_LETTER_WORDS.has(w.toUpperCase())
-    ).length;
+    let wordScore = 0;
+    
+    words.forEach(word => {
+      const upperWord = word.toUpperCase();
+      if (upperWord.length === 2 && this.TWO_LETTER_WORDS.has(upperWord)) {
+        wordScore += 8; // +8% за каждое 2-буквенное слово
+      }
+      if (this.TOP_WORDS.has(upperWord)) {
+        wordScore += 15; // +15% за каждое ключевое слово
+      }
+    });
 
-    return twoLetterMatches >= 1 && 
-           words.some(w => this.TOP_WORDS.has(w.toUpperCase()));
+    const totalScore = Math.min(100, bigramPercent + wordScore);
+    return Math.round(totalScore);
   }
 
-  // Основной метод с оптимизированным перебором
   crack(ciphertext, maxKeyLength = 3) {
-    const ct = ciphertext.toUpperCase();
     const results = [];
-    
-    // Генерация ключей через yield для экономии памяти
-    function* genKeys(len) {
-      const arr = Array(len).fill(0);
+    const ciphertextUpper = ciphertext.toUpperCase();
+
+    // Генератор ключей
+    function* generateKeys(length) {
+      const arr = Array(length).fill(0);
       while (true) {
         yield arr.map(i => ALPHABET[i]).join('');
-        let j = len - 1;
+        let j = length - 1;
         while (j >= 0 && ++arr[j] === 26) {
           arr[j] = 0;
           j--;
@@ -87,37 +86,52 @@ class VigenereUltra {
       }
     }
 
+    // Перебор ключей
     for (let len = 1; len <= maxKeyLength; len++) {
-      for (const key of genKeys(len)) {
-        const pt = this.decrypt(ct, key);
-        if (this.isMeaningful(pt)) {
-          return {
+      for (const key of generateKeys(len)) {
+        const plaintext = this.decrypt(ciphertextUpper, key);
+        const probability = this.calculateProbability(plaintext);
+        
+        if (probability >= 40) { // Порог приемлемости
+          results.push({
             key,
-            plaintext: pt,
-            stats: {
-              bigrams: (pt.match(/[A-Z]{2}/g) || []).filter(b => this.BIGRAMS.has(b)).length,
-              twoLetterWords: (pt.match(/\b[A-Za-z]{2}\b/g) || []).filter(w => this.TWO_LETTER_WORDS.has(w.toUpperCase())).length
+            text: plaintext,
+            probability, // Процент вероятности (40-100)
+            matches: {
+              bigrams: (plaintext.match(/[A-Z]{2}/g) || []).filter(b => this.BIGRAMS.has(b)).length,
+              words: words.filter(w => this.TOP_WORDS.has(w.toUpperCase())).length
             }
-          };
+          });
+
+          if (probability >= 90) break; // Прерывание при отличном результате
         }
       }
     }
-    
-    return { error: 'Не удалось найти осмысленный текст' };
+
+    return results.sort((a, b) => b.probability - a.probability).slice(0, 5);
   }
 }
 
-self.onmessage = (e) => {
+// Обработчик сообщений
+self.onmessage = function(e) {
   const { ciphertext, maxKeyLength } = e.data;
-  const hacker = new VigenereUltra();
-  const start = performance.now();
-  const result = hacker.crack(ciphertext, maxKeyLength);
-  result.time = (performance.now() - start).toFixed(2) + ' мс';
-  self.postMessage(result);
+  const solver = new VigenereMaster();
+  const startTime = performance.now();
+  
+  try {
+    const results = solver.crack(ciphertext, maxKeyLength);
+    const timeTaken = ((performance.now() - startTime)/1000).toFixed(2);
+    
+    self.postMessage({
+      type: 'RESULTS',
+      results: results.length > 0 ? results : [],
+      time: timeTaken + ' сек',
+      error: results.length === 0 ? 'Не найдено подходящих вариантов' : null
+    });
+  } catch (error) {
+    self.postMessage({
+      type: 'ERROR',
+      error: 'Ошибка при обработке: ' + error.message
+    });
+  }
 };
-`;
-
-// Пример использования:
-const worker = new Worker(URL.createObjectURL(new Blob([workerCode])));
-worker.onmessage = (e) => console.log(e.data);
-worker.postMessage({ ciphertext: 'CXVRCNMOCAKZ', maxKeyLength: 3 });
