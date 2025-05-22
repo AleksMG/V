@@ -1,111 +1,270 @@
-const NGRAMS = {
-    quadgrams: {
-        'TION': 3.79, 'THER': 3.59, 'NTHE': 3.51, 'THAT': 3.28,
-        'OFTH': 3.19, 'FTHE': 3.16, 'THES': 3.03, 'WITH': 2.98,
-        'INTH': 2.84, 'ATIO': 2.73, 'OTHE': 2.71, 'TTHA': 2.63
-    },
-    trigrams: {
-        'THE': 3.51, 'AND': 2.71, 'ING': 2.62, 'HER': 2.49,
-        'HAT': 2.44, 'HIS': 2.43, 'THA': 2.38, 'ERE': 2.36,
-        'FOR': 2.34, 'ENT': 2.34, 'ION': 2.30, 'TER': 2.26
-    },
-    bigrams: {
-        'TH': 3.56, 'HE': 3.07, 'IN': 2.43, 'ER': 2.41,
-        'AN': 2.38, 'RE': 2.21, 'ND': 2.02, 'AT': 1.96,
-        'ON': 1.95, 'NT': 1.89, 'HA': 1.85, 'ES': 1.84
-    }
-};
-
-class VigenereExpert {
+class VigenereCipher {
     constructor(alphabet) {
-        this.alphabet = [...new Set(alphabet.toUpperCase())];
-        this.charMap = Object.fromEntries(
-            this.alphabet.map((c, i) => [c, i])
-        );
+        this.alphabet = alphabet.toUpperCase();
+        this.alphabetMap = {};
+        
+        for (let i = 0; i < this.alphabet.length; i++) {
+            this.alphabetMap[this.alphabet[i]] = i;
+        }
     }
-
+    
     decrypt(ciphertext, key) {
-        return [...ciphertext].map((c, i) => {
-            const upper = c.toUpperCase();
-            if(!this.charMap[upper]) return c;
+        let result = '';
+        const keyUpper = key.toUpperCase();
+        let keyIndex = 0;
+        
+        for (let i = 0; i < ciphertext.length; i++) {
+            const char = ciphertext[i];
+            const upperChar = char.toUpperCase();
             
-            const textIdx = this.charMap[upper];
-            const keyIdx = this.charMap[key[i % key.length].toUpperCase()];
-            const decryptedIdx = (textIdx - keyIdx + this.alphabet.length) % this.alphabet.length;
-            
-            return this.alphabet[decryptedIdx];
-        }).join('');
-    }
-
-    score(text) {
-        const clean = text.toUpperCase().replace(/[^A-Z]/g, '');
-        let score = 0;
-
-        // Quadgram scoring (основной вес)
-        for(let i = 0; i < clean.length - 3; i++) {
-            const q = clean.substr(i, 4);
-            score += Math.log10(NGRAMS.quadgrams[q] || 1e-10);
+            if (this.alphabetMap[upperChar] !== undefined) {
+                const textPos = this.alphabetMap[upperChar];
+                const keyPos = this.alphabetMap[keyUpper[keyIndex % keyUpper.length]];
+                const newPos = (textPos - keyPos + this.alphabet.length) % this.alphabet.length;
+                
+                let newChar = this.alphabet[newPos];
+                if (char === char.toLowerCase()) {
+                    newChar = newChar.toLowerCase();
+                }
+                
+                result += newChar;
+                keyIndex++;
+            } else {
+                result += char;
+            }
         }
-
-        // Trigram validation
-        for(let i = 0; i < clean.length - 2; i++) {
-            const t = clean.substr(i, 3);
-            score += Math.log10(NGRAMS.trigrams[t] || 1e-12);
-        }
-
-        // Bigram penalties
-        for(let i = 0; i < clean.length - 1; i++) {
-            const b = clean.substr(i, 2);
-            if(!NGRAMS.bigrams[b]) score -= 0.5;
-        }
-
-        return score;
-    }
-
-    *generateKeys(maxLength) {
-        function* generate(len, prefix = '') {
-            if(len === 0) yield prefix;
-            else for(const c of this.alphabet) yield* generate(len - 1, prefix + c);
-        }
-        for(let l = 1; l <= maxLength; l++) yield* generate.call(this, l);
+        
+        return result;
     }
 }
 
-let solver;
+class TextScorer {
+    constructor() {
+        this.quadgrams = this.loadQuadgrams();
+        this.trigrams = this.loadTrigrams();
+        this.cache = new Map();
+    }
+    
+    loadQuadgrams() {
+        // English quadgram frequencies (log probabilities)
+        return {
+            'TION': 3.14, 'THER': 2.67, 'NTHE': 2.63, 'THAT': 2.53,
+            'OFTH': 2.46, 'FTHE': 2.44, 'THES': 2.34, 'WITH': 2.32,
+            'INTH': 2.13, 'ATIO': 2.08, 'OTHE': 2.06, 'TTHA': 1.98,
+            'NDTH': 1.96, 'ETHE': 1.94, 'TOTH': 1.89, 'DTHE': 1.87,
+            'INGT': 1.85, 'INGA': 1.83, 'OFTH': 1.81, 'REQU': 1.79,
+            // Add more quadgrams as needed
+        };
+    }
+    
+    loadTrigrams() {
+        // English trigram frequencies (log probabilities)
+        return {
+            'THE': 3.51, 'AND': 2.99, 'ING': 2.78, 'ENT': 2.71,
+            'ION': 2.55, 'HER': 2.45, 'FOR': 2.38, 'THA': 2.34,
+            'NTH': 2.33, 'INT': 2.19, 'ERE': 2.16, 'TIO': 2.15,
+            'TER': 2.09, 'EST': 2.03, 'ERS': 1.99, 'ATI': 1.97,
+            // Add more trigrams as needed
+        };
+    }
+    
+    score(text, method) {
+        const cacheKey = `${method}_${text}`;
+        if (this.cache.has(cacheKey)) {
+            return this.cache.get(cacheKey);
+        }
+        
+        const normalized = text.toUpperCase().replace(/[^A-Z]/g, '');
+        if (normalized.length < 3) {
+            return -Infinity;
+        }
+        
+        let score = 0;
+        
+        switch (method) {
+            case 'quadgrams':
+                score = this.quadgramScore(normalized);
+                break;
+                
+            case 'trigrams':
+                score = this.trigramScore(normalized);
+                break;
+                
+            case 'index':
+                score = this.indexOfCoincidence(normalized);
+                break;
+                
+            default:
+                score = this.quadgramScore(normalized);
+        }
+        
+        if (this.cache.size < 10000) {
+            this.cache.set(cacheKey, score);
+        }
+        
+        return score;
+    }
+    
+    quadgramScore(text) {
+        let score = 0;
+        const quadgrams = this.quadgrams;
+        const defaultScore = Math.log10(1e-10);
+        
+        for (let i = 0; i < text.length - 3; i++) {
+            const quadgram = text.substr(i, 4);
+            score += quadgrams[quadgram] !== undefined ? quadgrams[quadgram] : defaultScore;
+        }
+        
+        return score / (text.length - 3);
+    }
+    
+    trigramScore(text) {
+        let score = 0;
+        const trigrams = this.trigrams;
+        const defaultScore = Math.log10(1e-10);
+        
+        for (let i = 0; i < text.length - 2; i++) {
+            const trigram = text.substr(i, 3);
+            score += trigrams[trigram] !== undefined ? trigrams[trigram] : defaultScore;
+        }
+        
+        return score / (text.length - 2);
+    }
+    
+    indexOfCoincidence(text) {
+        const counts = {};
+        for (const char of text) {
+            counts[char] = (counts[char] || 0) + 1;
+        }
+        
+        let sum = 0;
+        const n = text.length;
+        for (const char in counts) {
+            sum += counts[char] * (counts[char] - 1);
+        }
+        
+        return n > 1 ? sum / (n * (n - 1)) : 0;
+    }
+    
+    checkMemory() {
+        if (typeof performance !== 'undefined' && performance.memory) {
+            const used = performance.memory.usedJSHeapSize;
+            const limit = performance.memory.jsHeapSizeLimit;
+            return (used / limit) * 100;
+        }
+        return 0;
+    }
+}
+
+let cipher;
+let scorer;
+
+function processBatch(batch, ciphertext, knownPlaintext, scoringMethod) {
+    const results = [];
+    let processed = 0;
+    
+    for (const key of batch) {
+        try {
+            // Check memory usage periodically
+            if (processed > 0 && processed % 100 === 0 && scorer.checkMemory() > 85) {
+                scorer.cache.clear();
+                self.postMessage({
+                    type: 'WARNING',
+                    message: 'Memory threshold exceeded, cache cleared'
+                });
+            }
+            
+            const decrypted = cipher.decrypt(ciphertext, key);
+            
+            // Skip if known plaintext is not found
+            if (knownPlaintext && !decrypted.includes(knownPlaintext)) {
+                processed++;
+                continue;
+            }
+            
+            const score = scorer.score(decrypted, scoringMethod);
+            
+            // Only keep results with meaningful scores
+            if (score > -Infinity) {
+                results.push({
+                    key,
+                    plaintext: decrypted,
+                    score
+                });
+            }
+            
+            processed++;
+            
+            // Report progress periodically
+            if (processed % 50 === 0) {
+                self.postMessage({
+                    type: 'PROGRESS',
+                    data: {
+                        processed,
+                        workerId: self.workerId
+                    }
+                });
+            }
+        } catch (error) {
+            console.error(`Error processing key ${key}:`, error);
+            processed++;
+        }
+    }
+    
+    return results;
+}
 
 self.onmessage = function(e) {
-    const {type, data} = e.data;
+    const { type, data } = e.data;
     
     try {
-        if(type === 'START') {
-            solver = new VigenereExpert(data.alphabet);
-            let keysTested = 0;
-            const startTime = Date.now();
-            
-            for(const key of solver.generateKeys(data.maxKeyLength)) {
-                const decrypted = solver.decrypt(data.ciphertext, key);
-                const score = solver.score(decrypted);
+        switch (type) {
+            case 'INIT':
+                cipher = new VigenereCipher(data.alphabet);
+                scorer = new TextScorer();
+                self.workerId = data.workerId;
+                self.postMessage({ type: 'READY' });
+                break;
                 
-                if(score > -Infinity) {
-                    self.postMessage({
-                        type: 'RESULT',
-                        data: {result: {key, text: decrypted, score}}
-                    );
-                }
-
-                keysTested++;
+            case 'PROCESS':
+                const results = processBatch(
+                    data.batch,
+                    data.ciphertext,
+                    data.knownPlaintext,
+                    data.scoringMethod
+                );
                 
-                // Отправляем прогресс каждые 100 мс
-                if(Date.now() - startTime > 100) {
-                    self.postMessage({
-                        type: 'PROGRESS',
-                        data: {keysTested}
-                    });
-                    keysTested = 0;
-                }
-            }
+                self.postMessage({
+                    type: 'RESULT',
+                    data: {
+                        results,
+                        workerId: self.workerId,
+                        batchId: data.batchId
+                    }
+                });
+                break;
+                
+            default:
+                throw new Error(`Unknown message type: ${type}`);
         }
-    } catch(error) {
-        self.postMessage({type: 'ERROR', error: error.message});
+    } catch (error) {
+        self.postMessage({
+            type: 'ERROR',
+            error: {
+                message: error.message,
+                stack: error.stack
+            }
+        });
     }
+};
+
+self.onerror = function(error) {
+    self.postMessage({
+        type: 'FATAL_ERROR',
+        error: {
+            message: 'Worker fatal error',
+            stack: error.message
+        }
+    });
+    return true; // Prevent default error handling
 };
