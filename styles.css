@@ -59,11 +59,12 @@ body {
 
 .main-content {
     display: grid;
-    grid-template-columns: 320px 1fr;
+    grid-template-columns: 1fr 1.5fr;
     gap: 20px;
+    height: calc(100vh - 180px);
 }
 
-.control-panel {
+.input-panel {
     background-color: rgba(255, 255, 255, 0.05);
     border-radius: var(--border-radius);
     padding: 20px;
@@ -71,6 +72,15 @@ body {
     display: flex;
     flex-direction: column;
     gap: 20px;
+}
+
+.results-panel {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 .panel-section {
@@ -121,7 +131,7 @@ select:focus {
 }
 
 textarea {
-    min-height: 120px;
+    min-height: 150px;
     resize: vertical;
 }
 
@@ -155,6 +165,7 @@ select {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    margin-top: auto;
 }
 
 .btn {
@@ -197,39 +208,31 @@ select {
     background-color: var(--danger-dark);
 }
 
-.progress-section {
+.results-header {
     display: flex;
-    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.results-header h2 {
+    font-size: 1.3rem;
+    color: var(--primary-color);
+}
+
+.results-controls {
+    display: flex;
     gap: 10px;
-}
-
-.progress-container {
-    height: 10px;
-    background-color: rgba(0, 0, 0, 0.3);
-    border-radius: 5px;
-    overflow: hidden;
-}
-
-.progress-bar {
-    height: 100%;
-    background-color: var(--secondary-color);
-    width: 0%;
-    transition: width 0.3s ease;
-}
-
-.progress-text {
-    text-align: right;
-    font-size: 0.9rem;
-    color: var(--gray-color);
 }
 
 .stats-panel {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(4, 1fr);
     gap: 10px;
+    padding: 15px 20px;
     background-color: rgba(0, 0, 0, 0.2);
-    padding: 15px;
-    border-radius: var(--border-radius);
 }
 
 .stat-item {
@@ -254,50 +257,35 @@ select {
     margin-left: 3px;
 }
 
-.results-panel {
-    background-color: rgba(255, 255, 255, 0.05);
-    border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow);
-    display: flex;
-    flex-direction: column;
+.progress-section {
+    padding: 0 20px 15px;
+}
+
+.progress-container {
+    height: 10px;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 5px;
     overflow: hidden;
 }
 
-.results-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px;
-    background-color: rgba(0, 0, 0, 0.2);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+.progress-bar {
+    height: 100%;
+    background-color: var(--secondary-color);
+    width: 0%;
+    transition: width 0.3s ease;
 }
 
-.results-header h2 {
-    font-size: 1.3rem;
-    color: var(--primary-color);
-}
-
-.results-controls {
-    display: flex;
-    gap: 10px;
-}
-
-.input-section {
-    padding: 0 20px 20px;
-}
-
-.input-section label {
-    display: block;
-    margin-bottom: 8px;
+.progress-text {
+    text-align: right;
     font-size: 0.9rem;
     color: var(--gray-color);
+    margin-top: 5px;
 }
 
 .results-container {
     flex: 1;
     padding: 0 20px 20px;
     overflow-y: auto;
-    max-height: 500px;
     display: flex;
     flex-direction: column;
     gap: 15px;
@@ -324,6 +312,8 @@ select {
     font-weight: 700;
     color: var(--primary-color);
     margin-bottom: 5px;
+    display: flex;
+    align-items: center;
 }
 
 .result-score {
@@ -346,14 +336,32 @@ select {
     overflow-x: auto;
 }
 
-/* Responsive adjustments */
-@media (max-width: 992px) {
+.error-message {
+    background-color: var(--danger-color);
+    color: white;
+    padding: 10px 15px;
+    border-radius: var(--border-radius);
+    margin-bottom: 15px;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 1200px) {
     .main-content {
         grid-template-columns: 1fr;
+        height: auto;
+    }
+    
+    .stats-panel {
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 
-@media (max-width: 576px) {
+@media (max-width: 768px) {
     .stats-panel {
         grid-template-columns: 1fr;
     }
