@@ -1,251 +1,108 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vigenère Breaker Pro</title>
-    <style>
-        :root {
-            --primary: #3498db;
-            --secondary: #2ecc71;
-            --danger: #e74c3c;
-            --background: #2c3e50;
-            --text: #ecf0f1;
-        }
-
-        body {
-            font-family: 'Roboto', sans-serif;
-            background: var(--background);
-            color: var(--text);
-            margin: 0;
-            padding: 20px;
-            min-height: 100vh;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: 300px 1fr;
-            gap: 20px;
-        }
-
-        .control-panel {
-            background: rgba(255,255,255,0.1);
-            padding: 20px;
-            border-radius: 10px;
-        }
-
-        .form-group {
-            margin: 15px 0;
-        }
-
-        input[type="text"], textarea {
-            width: 100%;
-            padding: 10px;
-            background: rgba(255,255,255,0.1);
-            border: 1px solid var(--primary);
-            color: var(--text);
-            border-radius: 5px;
-        }
-
-        button {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            width: 100%;
-            margin: 5px 0;
-            transition: 0.3s;
-        }
-
-        button:hover {
-            opacity: 0.9;
-        }
-
-        #stopBtn {
-            background: var(--danger);
-        }
-
-        .progress {
-            height: 15px;
-            background: rgba(0,0,0,0.3);
-            border-radius: 10px;
-            margin: 20px 0;
-        }
-
-        .progress-bar {
-            height: 100%;
-            background: var(--secondary);
-            border-radius: 10px;
-            transition: width 0.3s;
-        }
-
-        .results {
-            background: rgba(255,255,255,0.05);
-            padding: 20px;
-            border-radius: 10px;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-
-        .result-item {
-            background: rgba(0,0,0,0.2);
-            padding: 15px;
-            margin: 10px 0;
-            border-radius: 5px;
-            border-left: 3px solid var(--primary);
-        }
-    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <div class="control-panel">
-            <h2>Параметры</h2>
-            
-            <div class="form-group">
-                <label>Алфавит:</label>
-                <input type="text" id="alphabet" value="ABCDEFGHIJKLMNOPQRSTUVWXYZ">
-            </div>
-            
-            <div class="form-group">
-                <label>Количество ядер: <span id="workersValue">4</span></label>
-                <input type="range" id="workers" min="1" max="8" value="4">
-            </div>
-            
-            <div class="form-group">
-                <label>Макс. длина ключа: <span id="keyLengthValue">10</span></label>
-                <input type="range" id="keyLength" min="1" max="20" value="10">
-            </div>
-            
-            <button id="startBtn">Начать атаку</button>
-            <button id="stopBtn" disabled>Остановить</button>
-            
-            <div class="progress">
-                <div id="progressBar" class="progress-bar" style="width: 0%"></div>
-            </div>
-            
-            <div class="stats">
-                <div>Проверено ключей: <span id="keysTested">0</span></div>
-                <div>Скорость: <span id="speed">0</span> keys/sec</div>
-                <div>Осталось: <span id="timeLeft">-</span></div>
-            </div>
-        </div>
+    <div class="app-container">
+        <header class="app-header">
+            <h1>Vigenère Breaker Pro</h1>
+            <p class="app-description">Advanced ciphertext analysis tool</p>
+        </header>
 
-        <div class="results">
-            <h2>Результаты</h2>
-            <textarea id="ciphertext" placeholder="Введите шифртекст..."></textarea>
-            <div id="resultsContainer"></div>
+        <div class="main-content">
+            <div class="control-panel">
+                <div class="panel-section">
+                    <h2>Parameters</h2>
+                    
+                    <div class="form-group">
+                        <label for="alphabet">Alphabet:</label>
+                        <input type="text" id="alphabet" value="ABCDEFGHIJKLMNOPQRSTUVWXYZ" placeholder="Enter alphabet characters">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="workers">Worker Threads: <span id="workersValue">4</span></label>
+                        <input type="range" id="workers" min="1" max="16" value="4">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="keyLength">Max Key Length: <span id="keyLengthValue">10</span></label>
+                        <input type="range" id="keyLength" min="1" max="25" value="10">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="scoringMethod">Scoring Method:</label>
+                        <select id="scoringMethod">
+                            <option value="quadgrams">Quadgrams</option>
+                            <option value="trigrams">Trigrams</option>
+                            <option value="index">Index of Coincidence</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="knownPlaintext">Known Plaintext (optional):</label>
+                        <input type="text" id="knownPlaintext" placeholder="Known plaintext fragment">
+                    </div>
+                </div>
+                
+                <div class="action-buttons">
+                    <button id="startBtn" class="btn-primary">Start Attack</button>
+                    <button id="stopBtn" class="btn-danger" disabled>Stop</button>
+                    <button id="clearBtn" class="btn-secondary">Clear Results</button>
+                </div>
+                
+                <div class="progress-section">
+                    <div class="progress-container">
+                        <div id="progressBar" class="progress-bar"></div>
+                    </div>
+                    <div class="progress-text">
+                        <span id="progressPercent">0%</span>
+                    </div>
+                </div>
+                
+                <div class="stats-panel">
+                    <div class="stat-item">
+                        <span class="stat-label">Keys Tested:</span>
+                        <span id="keysTested" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Speed:</span>
+                        <span id="speed" class="stat-value">0</span>
+                        <span class="stat-unit">keys/sec</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Time Left:</span>
+                        <span id="timeLeft" class="stat-value">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Best Score:</span>
+                        <span id="bestScore" class="stat-value">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="results-panel">
+                <div class="results-header">
+                    <h2>Results</h2>
+                    <div class="results-controls">
+                        <button id="exportBtn" class="btn-secondary">Export Results</button>
+                    </div>
+                </div>
+                
+                <div class="input-section">
+                    <label for="ciphertext">Ciphertext:</label>
+                    <textarea id="ciphertext" placeholder="Enter ciphertext here..."></textarea>
+                </div>
+                
+                <div id="resultsContainer" class="results-container"></div>
+            </div>
         </div>
     </div>
 
-    <script>
-        class VigenereBreaker {
-            constructor() {
-                this.workers = [];
-                this.startTime = 0;
-                this.keysTested = 0;
-                this.totalKeys = 0;
-                this.isRunning = false;
-            }
-
-            init(alphabet, workers, maxKeyLength) {
-                this.stop();
-                this.workers = Array.from({length: workers}, () => new Worker('worker.js'));
-                this.totalKeys = this.calculateTotalKeys(alphabet.length, maxKeyLength);
-            }
-
-            start(ciphertext, alphabet, maxKeyLength) {
-                this.isRunning = true;
-                this.startTime = performance.now();
-                
-                this.workers.forEach((worker, i) => {
-                    worker.onmessage = (e) => this.handleMessage(e);
-                    worker.postMessage({
-                        type: 'START',
-                        ciphertext,
-                        alphabet,
-                        maxKeyLength,
-                        workerId: i
-                    });
-                });
-            }
-
-            handleMessage(e) {
-                const {type, data} = e.data;
-                switch(type) {
-                    case 'PROGRESS':
-                        this.keysTested += data.keysTested;
-                        this.updateUI();
-                        break;
-                    case 'RESULT':
-                        this.addResult(data.result);
-                        break;
-                }
-            }
-
-            updateUI() {
-                const elapsed = (performance.now() - this.startTime) / 1000;
-                const speed = Math.floor(this.keysTested / elapsed);
-                const progress = (this.keysTested / this.totalKeys * 100).toFixed(2);
-                
-                document.getElementById('progressBar').style.width = `${progress}%`;
-                document.getElementById('keysTested').textContent = this.keysTested;
-                document.getElementById('speed').textContent = speed;
-            }
-
-            addResult(result) {
-                const div = document.createElement('div');
-                div.className = 'result-item';
-                div.innerHTML = `
-                    <strong>Ключ:</strong> ${result.key}<br>
-                    <strong>Оценка:</strong> ${result.score.toFixed(2)}<br>
-                    <pre>${result.text}</pre>
-                `;
-                document.getElementById('resultsContainer').prepend(div);
-            }
-
-            calculateTotalKeys(alphabetSize, maxLength) {
-                return Array.from({length: maxLength}, (_, i) => alphabetSize ** (i + 1))
-                    .reduce((a, b) => a + b, 0);
-            }
-
-            stop() {
-                this.workers.forEach(w => w.terminate());
-                this.workers = [];
-                this.isRunning = false;
-            }
-        }
-
-        // Инициализация
-        const breaker = new VigenereBreaker();
-        
-        document.getElementById('workers').oninput = function() {
-            document.getElementById('workersValue').textContent = this.value;
-        };
-
-        document.getElementById('keyLength').oninput = function() {
-            document.getElementById('keyLengthValue').textContent = this.value;
-        };
-
-        document.getElementById('startBtn').onclick = () => {
-            const alphabet = document.getElementById('alphabet').value;
-            const workers = parseInt(document.getElementById('workers').value);
-            const maxKeyLength = parseInt(document.getElementById('keyLength').value);
-            const ciphertext = document.getElementById('ciphertext').value;
-            
-            breaker.init(alphabet, workers, maxKeyLength);
-            breaker.start(ciphertext, alphabet, maxKeyLength);
-            document.getElementById('startBtn').disabled = true;
-            document.getElementById('stopBtn').disabled = false;
-        };
-
-        document.getElementById('stopBtn').onclick = () => {
-            breaker.stop();
-            document.getElementById('startBtn').disabled = false;
-            document.getElementById('stopBtn').disabled = true;
-        };
-    </script>
+    <script src="app.js"></script>
 </body>
 </html>
