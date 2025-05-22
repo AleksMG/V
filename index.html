@@ -1,16 +1,15 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vigenère Professional Analyzer</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;500;700&display=swap" rel="stylesheet">
+    <title>Vigenère Breaker Pro</title>
     <style>
         :root {
-            --primary: #2ecc71;
-            --secondary: #e74c3c;
-            --background: #3498db;
-            --text: #2c3e50;
+            --primary: #3498db;
+            --secondary: #2ecc71;
+            --danger: #e74c3c;
+            --background: #2c3e50;
+            --text: #ecf0f1;
         }
 
         body {
@@ -19,59 +18,45 @@
             color: var(--text);
             margin: 0;
             padding: 20px;
+            min-height: 100vh;
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            background: white;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+        }
+
+        .control-panel {
+            background: rgba(255,255,255,0.1);
             padding: 20px;
             border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
         }
 
-        nav {
-            background: var(--primary);
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-
-        nav a {
-            color: white;
-            text-decoration: none;
-            margin: 0 15px;
-            font-weight: 500;
-        }
-
-        .section {
-            display: none;
-            padding: 20px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-
-        .active {
-            display: block;
+        .form-group {
+            margin: 15px 0;
         }
 
         input[type="text"], textarea {
             width: 100%;
             padding: 10px;
-            margin: 5px 0;
-            border: 2px solid var(--primary);
-            border-radius: 4px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid var(--primary);
+            color: var(--text);
+            border-radius: 5px;
         }
 
         button {
-            background: var(--secondary);
+            background: var(--primary);
             color: white;
             border: none;
-            padding: 12px 25px;
+            padding: 12px 20px;
             border-radius: 5px;
             cursor: pointer;
-            margin: 10px 5px;
+            width: 100%;
+            margin: 5px 0;
             transition: 0.3s;
         }
 
@@ -79,178 +64,187 @@
             opacity: 0.9;
         }
 
-        .progress-container {
-            height: 25px;
-            background: #f0f0f0;
-            border-radius: 5px;
-            margin: 15px 0;
+        #stopBtn {
+            background: var(--danger);
+        }
+
+        .progress {
+            height: 15px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            margin: 20px 0;
         }
 
         .progress-bar {
             height: 100%;
-            background: var(--primary);
-            border-radius: 5px;
-            transition: width 0.5s ease;
+            background: var(--secondary);
+            border-radius: 10px;
+            transition: width 0.3s;
         }
 
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin: 20px 0;
+        .results {
+            background: rgba(255,255,255,0.05);
+            padding: 20px;
+            border-radius: 10px;
+            max-height: 80vh;
+            overflow-y: auto;
         }
 
         .result-item {
-            background: #f8f9fa;
+            background: rgba(0,0,0,0.2);
             padding: 15px;
-            border-left: 4px solid var(--primary);
             margin: 10px 0;
+            border-radius: 5px;
+            border-left: 3px solid var(--primary);
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <nav>
-            <a href="#analyze" onclick="showSection('analyze')">Analyze</a>
-            <a href="#decrypt" onclick="showSection('decrypt')">Decrypt</a>
-            <a href="#custom" onclick="showSection('custom')">Custom Alphabet</a>
-        </nav>
-
-        <!-- Analyze Section -->
-        <div id="analyze" class="section active">
-            <h2>Cipher Analysis</h2>
-            <textarea id="cipherInput" placeholder="Enter ciphertext..."></textarea>
+        <div class="control-panel">
+            <h2>Параметры</h2>
             
-            <div class="settings">
-                <div>
-                    <label>Workers: <span id="workerCount">4</span></label>
-                    <input type="range" id="workers" min="1" max="8" value="4">
-                </div>
-                
-                <div>
-                    <label>Max Key Length: <span id="keyLengthValue">10</span></label>
-                    <input type="range" id="keyLength" min="1" max="20" value="10">
-                </div>
+            <div class="form-group">
+                <label>Алфавит:</label>
+                <input type="text" id="alphabet" value="ABCDEFGHIJKLMNOPQRSTUVWXYZ">
             </div>
-
-            <button onclick="startAnalysis()">Start Attack</button>
-            <button onclick="stopAnalysis()" id="stopBtn" disabled>Stop</button>
-
-            <div class="progress-container">
+            
+            <div class="form-group">
+                <label>Количество ядер: <span id="workersValue">4</span></label>
+                <input type="range" id="workers" min="1" max="8" value="4">
+            </div>
+            
+            <div class="form-group">
+                <label>Макс. длина ключа: <span id="keyLengthValue">10</span></label>
+                <input type="range" id="keyLength" min="1" max="20" value="10">
+            </div>
+            
+            <button id="startBtn">Начать атаку</button>
+            <button id="stopBtn" disabled>Остановить</button>
+            
+            <div class="progress">
                 <div id="progressBar" class="progress-bar" style="width: 0%"></div>
             </div>
-
+            
             <div class="stats">
-                <div>Keys Tested: <span id="keysTested">0</span></div>
-                <div>Speed: <span id="speed">0</span> keys/sec</div>
-                <div>Time Left: <span id="timeLeft">-</span></div>
+                <div>Проверено ключей: <span id="keysTested">0</span></div>
+                <div>Скорость: <span id="speed">0</span> keys/sec</div>
+                <div>Осталось: <span id="timeLeft">-</span></div>
             </div>
-
-            <div id="results"></div>
         </div>
 
-        <!-- Custom Alphabet Section -->
-        <div id="custom" class="section">
-            <h2>Custom Alphabet Setup</h2>
-            <input type="text" id="customAlphabet" value="ABCDEFGHIJKLMNOPQRSTUVWXYZ">
-            <button onclick="updateAlphabet()">Update Alphabet</button>
+        <div class="results">
+            <h2>Результаты</h2>
+            <textarea id="ciphertext" placeholder="Введите шифртекст..."></textarea>
+            <div id="resultsContainer"></div>
         </div>
     </div>
 
     <script>
-        let workers = [];
-        let startTime = 0;
-        let totalKeys = 0;
-        let testedKeys = 0;
-        let currentAlphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        class VigenereBreaker {
+            constructor() {
+                this.workers = [];
+                this.startTime = 0;
+                this.keysTested = 0;
+                this.totalKeys = 0;
+                this.isRunning = false;
+            }
 
-        // Инициализация воркеров
-        function initWorkers(count) {
-            workers.forEach(w => w.terminate());
-            workers = Array.from({length: count}, () => new Worker('worker.js'));
-        }
+            init(alphabet, workers, maxKeyLength) {
+                this.stop();
+                this.workers = Array.from({length: workers}, () => new Worker('worker.js'));
+                this.totalKeys = this.calculateTotalKeys(alphabet.length, maxKeyLength);
+            }
 
-        // Запуск анализа
-        function startAnalysis() {
-            const ciphertext = document.getElementById('cipherInput').value;
-            const maxKeyLength = document.getElementById('keyLength').value;
-            
-            initWorkers(document.getElementById('workers').value);
-            startTime = performance.now();
-            
-            workers.forEach((worker, i) => {
-                worker.onmessage = handleWorkerMessage;
-                worker.postMessage({
-                    type: 'START',
-                    ciphertext,
-                    alphabet: currentAlphabet,
-                    maxKeyLength,
-                    workerId: i
+            start(ciphertext, alphabet, maxKeyLength) {
+                this.isRunning = true;
+                this.startTime = performance.now();
+                
+                this.workers.forEach((worker, i) => {
+                    worker.onmessage = (e) => this.handleMessage(e);
+                    worker.postMessage({
+                        type: 'START',
+                        ciphertext,
+                        alphabet,
+                        maxKeyLength,
+                        workerId: i
+                    });
                 });
-            });
-        }
+            }
 
-        // Обработка сообщений от воркеров
-        function handleWorkerMessage(e) {
-            const {type, data} = e.data;
-            
-            switch(type) {
-                case 'PROGRESS':
-                    testedKeys += data.tested;
-                    updateProgress();
-                    break;
+            handleMessage(e) {
+                const {type, data} = e.data;
+                switch(type) {
+                    case 'PROGRESS':
+                        this.keysTested += data.keysTested;
+                        this.updateUI();
+                        break;
+                    case 'RESULT':
+                        this.addResult(data.result);
+                        break;
+                }
+            }
+
+            updateUI() {
+                const elapsed = (performance.now() - this.startTime) / 1000;
+                const speed = Math.floor(this.keysTested / elapsed);
+                const progress = (this.keysTested / this.totalKeys * 100).toFixed(2);
                 
-                case 'RESULT':
-                    addResult(data.result);
-                    break;
-                
-                case 'ERROR':
-                    console.error('Worker error:', data.error);
-                    break;
+                document.getElementById('progressBar').style.width = `${progress}%`;
+                document.getElementById('keysTested').textContent = this.keysTested;
+                document.getElementById('speed').textContent = speed;
+            }
+
+            addResult(result) {
+                const div = document.createElement('div');
+                div.className = 'result-item';
+                div.innerHTML = `
+                    <strong>Ключ:</strong> ${result.key}<br>
+                    <strong>Оценка:</strong> ${result.score.toFixed(2)}<br>
+                    <pre>${result.text}</pre>
+                `;
+                document.getElementById('resultsContainer').prepend(div);
+            }
+
+            calculateTotalKeys(alphabetSize, maxLength) {
+                return Array.from({length: maxLength}, (_, i) => alphabetSize ** (i + 1))
+                    .reduce((a, b) => a + b, 0);
+            }
+
+            stop() {
+                this.workers.forEach(w => w.terminate());
+                this.workers = [];
+                this.isRunning = false;
             }
         }
 
-        // Обновление прогресса
-        function updateProgress() {
-            const elapsed = (performance.now() - startTime) / 1000;
-            const speed = Math.round(testedKeys / elapsed);
-            const progress = totalKeys > 0 ? (testedKeys / totalKeys * 100) : 0;
-            
-            document.getElementById('progressBar').style.width = `${progress}%`;
-            document.getElementById('speed').textContent = speed;
-            document.getElementById('keysTested').textContent = testedKeys;
-        }
-
-        // Добавление результата
-        function addResult(result) {
-            const div = document.createElement('div');
-            div.className = 'result-item';
-            div.innerHTML = `
-                <h4>Key: ${result.key}</h4>
-                <p>Score: ${result.score.toFixed(2)}</p>
-                <pre>${result.text}</pre>
-            `;
-            document.getElementById('results').appendChild(div);
-        }
-
-        // Обновление алфавита
-        function updateAlphabet() {
-            currentAlphabet = document.getElementById('customAlphabet').value;
-        }
-
-        // Показ секций
-        function showSection(sectionId) {
-            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-            document.getElementById(sectionId).classList.add('active');
-        }
-
-        // Инициализация UI
+        // Инициализация
+        const breaker = new VigenereBreaker();
+        
         document.getElementById('workers').oninput = function() {
-            document.getElementById('workerCount').textContent = this.value;
+            document.getElementById('workersValue').textContent = this.value;
         };
 
         document.getElementById('keyLength').oninput = function() {
             document.getElementById('keyLengthValue').textContent = this.value;
+        };
+
+        document.getElementById('startBtn').onclick = () => {
+            const alphabet = document.getElementById('alphabet').value;
+            const workers = parseInt(document.getElementById('workers').value);
+            const maxKeyLength = parseInt(document.getElementById('keyLength').value);
+            const ciphertext = document.getElementById('ciphertext').value;
+            
+            breaker.init(alphabet, workers, maxKeyLength);
+            breaker.start(ciphertext, alphabet, maxKeyLength);
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+        };
+
+        document.getElementById('stopBtn').onclick = () => {
+            breaker.stop();
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
         };
     </script>
 </body>
