@@ -1,544 +1,272 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vigenère Breaker Pro</title>
+    <title>Vigenere Cracker Pro</title>
     <style>
-        :root {
-            --primary: #4285F4;
-            --secondary: #34A853;
-            --danger: #EA4335;
-            --dark: #202124;
-            --light: #F8F9FA;
-            --gray: #5F6368;
-        }
-
         body {
-            font-family: 'Roboto', sans-serif;
-            background: var(--dark);
-            color: var(--light);
-            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
             padding: 20px;
-            line-height: 1.6;
+            background-color: #f5f5f5;
         }
-
         .container {
             display: grid;
-            grid-template-columns: 350px 1fr;
+            grid-template-columns: 1fr 1fr;
             gap: 20px;
-            max-width: 1400px;
-            margin: 0 auto;
         }
-
         .panel {
-            background: #2D2E30;
-            border-radius: 8px;
+            background: white;
             padding: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-
-        h2 {
-            margin-top: 0;
-            color: var(--primary);
-            font-weight: 500;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            color: var(--light);
-        }
-
-        input[type="text"], textarea, select {
-            width: 100%;
-            padding: 12px;
-            background: #3C4043;
-            border: 1px solid #5F6368;
-            color: var(--light);
-            border-radius: 4px;
-            font-size: 14px;
-        }
-
         textarea {
-            min-height: 200px;
-            resize: vertical;
-            font-family: 'Consolas', monospace;
+            width: 100%;
+            min-height: 100px;
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
         }
-
-        .range-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        input[type="range"] {
-            flex: 1;
-            height: 6px;
-            background: #5F6368;
-            border-radius: 3px;
-            -webkit-appearance: none;
-        }
-
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 18px;
-            height: 18px;
-            background: var(--primary);
-            border-radius: 50%;
-            cursor: pointer;
-        }
-
-        .btn-group {
-            display: grid;
-            gap: 10px;
-            margin: 20px 0;
-        }
-
         button {
-            padding: 12px;
+            background: #4CAF50;
+            color: white;
             border: none;
+            padding: 10px 15px;
             border-radius: 4px;
-            font-weight: 500;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            transition: all 0.2s;
+            margin-right: 10px;
         }
-
         button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
+            background: #cccccc;
         }
-
-        .btn-primary {
-            background: var(--primary);
-            color: white;
+        button.stop {
+            background: #f44336;
         }
-
-        .btn-danger {
-            background: var(--danger);
-            color: white;
-        }
-
-        .btn-success {
-            background: var(--secondary);
-            color: white;
-        }
-
-        .progress-container {
+        .progress {
             margin: 20px 0;
+            background: #e0e0e0;
+            border-radius: 4px;
+            height: 20px;
         }
-
-        .progress-info {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 5px;
-            font-size: 14px;
-        }
-
         .progress-bar {
-            height: 8px;
-            background: #3C4043;
-            border-radius: 4px;
-            overflow: hidden;
-        }
-
-        .progress-fill {
+            background: #4CAF50;
             height: 100%;
-            background: var(--secondary);
             border-radius: 4px;
-            transition: width 0.3s;
             width: 0%;
+            transition: width 0.3s;
         }
-
-        .stats {
-            background: #3C4043;
-            padding: 15px;
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f9f9f9;
             border-radius: 4px;
-            margin-top: 20px;
         }
-
-        .stat-item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-            font-size: 14px;
+        .settings {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 15px 0;
         }
-
-        .stat-value {
-            font-weight: 500;
-            color: var(--primary);
-        }
-
-        .results-container {
-            height: calc(100vh - 100px);
-            display: flex;
-            flex-direction: column;
-        }
-
-        .result-item {
-            background: #3C4043;
-            padding: 15px;
-            margin-bottom: 15px;
-            border-radius: 4px;
-            border-left: 4px solid var(--primary);
-        }
-
-        .result-item.best {
-            border-left-color: var(--secondary);
-            background: rgba(52, 168, 83, 0.1);
-        }
-
-        .result-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        .setting-item {
             margin-bottom: 10px;
         }
-
-        .result-key {
-            font-weight: 700;
-            color: var(--primary);
-            font-size: 16px;
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
         }
-
-        .result-score {
-            background: rgba(0,0,0,0.3);
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-        }
-
-        .result-text {
-            font-family: 'Consolas', monospace;
-            white-space: pre-wrap;
-            background: rgba(0,0,0,0.3);
-            padding: 10px;
-            border-radius: 4px;
-            overflow-x: auto;
-        }
-
-        .best .result-key {
-            color: var(--secondary);
-        }
-
-        .alert {
-            padding: 12px;
-            border-radius: 4px;
-            margin-bottom: 20px;
-            display: none;
-        }
-
-        .alert-error {
-            background: rgba(234, 67, 53, 0.2);
-            border-left: 4px solid var(--danger);
-            color: var(--danger);
-        }
-
-        .alert-info {
-            background: rgba(66, 133, 244, 0.2);
-            border-left: 4px solid var(--primary);
-            color: var(--primary);
-        }
-
-        .alert-warning {
-            background: rgba(244, 180, 0, 0.2);
-            border-left: 4px solid #F4B400;
-            color: #F4B400;
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                grid-template-columns: 1fr;
-            }
+        input[type="range"] {
+            width: 100%;
         }
     </style>
 </head>
 <body>
+    <h1>Vigenere Cracker Professional</h1>
+    
     <div class="container">
         <div class="panel">
-            <h2>Параметры взлома</h2>
+            <h2>Input</h2>
+            <label for="ciphertext">Ciphertext:</label>
+            <textarea id="ciphertext" placeholder="Enter encrypted text here"></textarea>
             
-            <div class="alert" id="alert"></div>
+            <label for="known-text">Known Plaintext (optional):</label>
+            <input type="text" id="known-text" placeholder="Known part of text">
             
-            <div class="form-group">
-                <label for="alphabet">Алфавит:</label>
-                <input type="text" id="alphabet" value="ABCDEFGHIJKLMNOPQRSTUVWXYZ">
-            </div>
-            
-            <div class="form-group">
-                <label for="scoringMethod">Метод оценки:</label>
-                <select id="scoringMethod">
-                    <option value="quadgrams">Quadgram анализ</option>
-                    <option value="ic">Индекс совпадений</option>
-                    <option value="chi2">Хи-квадрат</option>
-                    <option value="combined">Комбинированный</option>
-                </select>
-            </div>
-            
-            <div class="form-group">
-                <label for="workers">Количество потоков: <span id="workersValue">4</span></label>
-                <div class="range-group">
-                    <input type="range" id="workers" min="1" max="16" value="4">
+            <div class="settings">
+                <div class="setting-item">
+                    <label for="key-length">Max Key Length: <span id="key-length-value">5</span></label>
+                    <input type="range" id="key-length" min="1" max="10" value="5">
+                </div>
+                
+                <div class="setting-item">
+                    <label for="workers">Workers: <span id="workers-value">4</span></label>
+                    <input type="range" id="workers" min="1" max="8" value="4">
                 </div>
             </div>
             
-            <div class="form-group">
-                <label for="keyLength">Макс. длина ключа: <span id="keyLengthValue">6</span></label>
-                <div class="range-group">
-                    <input type="range" id="keyLength" min="1" max="12" value="6">
-                </div>
+            <button id="start-btn">Start Cracking</button>
+            <button id="stop-btn" class="stop" disabled>Stop</button>
+            
+            <div class="progress">
+                <div id="progress-bar" class="progress-bar"></div>
             </div>
             
-            <div class="form-group">
-                <label for="resultsLimit">Лучших результатов: <span id="resultsLimitValue">10</span></label>
-                <div class="range-group">
-                    <input type="range" id="resultsLimit" min="1" max="20" value="10">
-                </div>
-            </div>
-            
-            <div class="btn-group">
-                <button id="startBtn" class="btn-primary">
-                    Начать атаку
-                </button>
-                <button id="stopBtn" class="btn-danger" disabled>
-                    Остановить
-                </button>
-                <button id="saveBtn" class="btn-success" disabled>
-                    Сохранить результаты
-                </button>
-            </div>
-            
-            <div class="progress-container">
-                <div class="progress-info">
-                    <span>Прогресс:</span>
-                    <span id="progressValue">0%</span>
-                </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progressBar"></div>
-                </div>
-            </div>
-            
-            <div class="stats">
-                <div class="stat-item">
-                    <span>Проверено ключей:</span>
-                    <span id="keysTested" class="stat-value">0</span>
-                </div>
-                <div class="stat-item">
-                    <span>Скорость:</span>
-                    <span id="speed" class="stat-value">0</span> keys/sec
-                </div>
-                <div class="stat-item">
-                    <span>Осталось:</span>
-                    <span id="timeLeft" class="stat-value">-</span>
-                </div>
-                <div class="stat-item">
-                    <span>Лучший результат:</span>
-                    <span id="bestScore" class="stat-value">-</span>
-                </div>
-            </div>
+            <div id="status">Ready</div>
+            <div>Keys tested: <span id="keys-tested">0</span></div>
+            <div>Speed: <span id="speed">0</span> keys/sec</div>
         </div>
-
+        
         <div class="panel">
-            <h2>Результаты</h2>
-            
-            <div class="form-group">
-                <label for="ciphertext">Шифртекст:</label>
-                <textarea id="ciphertext" placeholder="Введите зашифрованный текст..."></textarea>
-            </div>
-            
-            <div class="results-container">
-                <div id="resultsContainer"></div>
-            </div>
+            <h2>Results</h2>
+            <div id="results"></div>
         </div>
     </div>
 
     <script>
-        // Полный quadgram-анализ (упрощенная версия)
-        const quadgrams = {
-            'TION': 0.031404, 'THER': 0.026642, 'NTHE': 0.026317, 'THAT': 0.025347,
-            'OFTH': 0.024598, 'FTHE': 0.024373, 'THES': 0.023390, 'WITH': 0.023163,
-            'INTH': 0.021318, 'ATIO': 0.020796, 'OTHE': 0.020626, 'TTHA': 0.019758
-        };
-
-        class VigenereBreakerPro {
+        class VigenereCracker {
             constructor() {
-                this.workers = [];
+                this.worker = new Worker('worker.js');
                 this.isRunning = false;
+                this.startTime = 0;
                 this.keysTested = 0;
+                this.totalKeys = 0;
+                this.worker.onmessage = (e) => this.handleWorkerMessage(e);
+                this.worker.onerror = (e) => this.handleWorkerError(e);
             }
 
-            start(alphabet, ciphertext, maxKeyLength, method, workers) {
-                this.stop();
+            start(ciphertext, options) {
+                if (this.isRunning) return;
+                
                 this.isRunning = true;
+                this.startTime = performance.now();
+                this.keysTested = 0;
                 
-                const totalKeys = this.calculateTotalKeys(alphabet.length, maxKeyLength);
-                const keysPerWorker = Math.ceil(totalKeys / workers);
-                
-                for (let i = 0; i < workers; i++) {
-                    const worker = new Worker(URL.createObjectURL(new Blob([`
-                        const quadgrams = ${JSON.stringify(quadgrams)};
-                        
-                        function decrypt(text, key, alphabet) {
-                            let result = '';
-                            const keyLen = key.length;
-                            const alphaLen = alphabet.length;
-                            
-                            for (let i = 0; i < text.length; i++) {
-                                const char = text[i];
-                                const keyChar = key[i % keyLen];
-                                const pos = (alphabet.indexOf(char) - alphabet.indexOf(keyChar) + alphaLen;
-                                result += alphabet[pos % alphaLen] || char;
-                            }
-                            return result;
-                        }
-                        
-                        function scoreText(text, method) {
-                            text = text.toUpperCase();
-                            let score = 0;
-                            
-                            // Quadgram анализ
-                            if (method === 'quadgrams' || method === 'combined') {
-                                for (let i = 0; i < text.length - 3; i++) {
-                                    const quad = text.substr(i, 4);
-                                    score += Math.log10(quadgrams[quad] || 1e-12);
-                                }
-                            }
-                            
-                            // Индекс совпадений
-                            if (method === 'ic' || method === 'combined') {
-                                let sum = 0;
-                                const counts = {};
-                                for (const char of text) {
-                                    counts[char] = (counts[char] || 0) + 1;
-                                }
-                                for (const char in counts) {
-                                    sum += counts[char] * (counts[char] - 1);
-                                }
-                                const ic = sum / (text.length * (text.length - 1));
-                                score += (1 - Math.abs(ic - 0.0667)) * 10;
-                            }
-                            
-                            return score;
-                        }
-                        
-                        onmessage = function(e) {
-                            const { alphabet, ciphertext, start, end, maxLength, method } = e.data;
-                            const results = [];
-                            
-                            for (let i = start; i < end; i++) {
-                                let key = '';
-                                let remaining = i;
-                                
-                                // Генерация ключа
-                                let length = 1;
-                                while (length <= maxLength) {
-                                    const keysOfLength = Math.pow(alphabet.length, length);
-                                    if (remaining < keysOfLength) break;
-                                    remaining -= keysOfLength;
-                                    length++;
-                                }
-                                
-                                if (length > maxLength) continue;
-                                
-                                for (let j = 0; j < length; j++) {
-                                    const pos = remaining % alphabet.length;
-                                    key = alphabet[pos] + key;
-                                    remaining = Math.floor(remaining / alphabet.length);
-                                }
-                                
-                                // Дешифровка и оценка
-                                const decrypted = decrypt(ciphertext, key, alphabet);
-                                const score = scoreText(decrypted, method);
-                                
-                                if (score > -5) {
-                                    results.push({ key, text: decrypted, score });
-                                }
-                                
-                                if (i % 1000 === 0) {
-                                    postMessage({ type: 'progress', processed: 1000 });
-                                }
-                            }
-                            
-                            postMessage({ type: 'results', results });
-                        };
-                    `])));
-                    
-                    worker.onmessage = (e) => {
-                        if (e.data.type === 'progress') {
-                            this.keysTested += e.data.processed;
-                        } else if (e.data.type === 'results') {
-                            this.addResults(e.data.results);
-                        }
-                    };
-                    
-                    worker.postMessage({
-                        alphabet,
-                        ciphertext,
-                        start: i * keysPerWorker,
-                        end: Math.min((i + 1) * keysPerWorker, totalKeys),
-                        maxLength: maxKeyLength,
-                        method
-                    });
-                    
-                    this.workers.push(worker);
-                }
-            }
-
-            addResults(newResults) {
-                // Сортировка и сохранение лучших результатов
-                newResults.sort((a, b) => b.score - a.score);
-                // ... (логика отображения)
+                this.worker.postMessage({
+                    type: 'START',
+                    ciphertext,
+                    options
+                });
             }
 
             stop() {
-                this.workers.forEach(w => w.terminate());
-                this.workers = [];
+                if (!this.isRunning) return;
+                
+                this.worker.postMessage({ type: 'STOP' });
                 this.isRunning = false;
+                return true;
             }
 
-            calculateTotalKeys(alphabetSize, maxLength) {
-                return alphabetSize * (Math.pow(alphabetSize, maxLength) - 1) / (alphabetSize - 1);
+            handleWorkerMessage(e) {
+                const { type, data } = e.data;
+                
+                switch (type) {
+                    case 'PROGRESS':
+                        this.keysTested = data.keysTested;
+                        this.updateProgress();
+                        break;
+                        
+                    case 'RESULT':
+                        this.keysTested = data.keysTested;
+                        this.displayResult(data.result);
+                        this.updateProgress();
+                        break;
+                        
+                    case 'COMPLETE':
+                        this.isRunning = false;
+                        document.getElementById('start-btn').disabled = false;
+                        document.getElementById('stop-btn').disabled = true;
+                        document.getElementById('status').textContent = 'Complete';
+                        break;
+                        
+                    case 'ERROR':
+                        console.error('Worker error:', data.error);
+                        this.isRunning = false;
+                        document.getElementById('start-btn').disabled = false;
+                        document.getElementById('stop-btn').disabled = true;
+                        document.getElementById('status').textContent = 'Error: ' + data.error;
+                        break;
+                }
+            }
+
+            handleWorkerError(e) {
+                console.error('Worker fatal error:', e);
+                this.isRunning = false;
+                document.getElementById('start-btn').disabled = false;
+                document.getElementById('stop-btn').disabled = true;
+                document.getElementById('status').textContent = 'Worker crashed';
+            }
+
+            updateProgress() {
+                const elapsed = (performance.now() - this.startTime) / 1000;
+                const speed = Math.round(this.keysTested / elapsed);
+                const progress = this.totalKeys > 0 ? (this.keysTested / this.totalKeys) * 100 : 0;
+                
+                document.getElementById('progress-bar').style.width = `${progress}%`;
+                document.getElementById('keys-tested').textContent = this.keysTested.toLocaleString();
+                document.getElementById('speed').textContent = speed.toLocaleString();
+            }
+
+            displayResult(result) {
+                const resultsDiv = document.getElementById('results');
+                const resultDiv = document.createElement('div');
+                resultDiv.className = 'result';
+                resultDiv.innerHTML = `
+                    <h3>Key: ${result.key} (Score: ${result.score.toFixed(2)})</h3>
+                    <p>${result.plaintext}</p>
+                `;
+                resultsDiv.prepend(resultDiv);
             }
         }
 
-        // Инициализация UI
+        // UI Setup
         document.addEventListener('DOMContentLoaded', () => {
-            const breaker = new VigenereBreakerPro();
+            const cracker = new VigenereCracker();
+            const startBtn = document.getElementById('start-btn');
+            const stopBtn = document.getElementById('stop-btn');
             
-            // Обработчики бегунков
+            // Update range values
+            document.getElementById('key-length').addEventListener('input', (e) => {
+                document.getElementById('key-length-value').textContent = e.target.value;
+            });
+            
             document.getElementById('workers').addEventListener('input', (e) => {
-                document.getElementById('workersValue').textContent = e.target.value;
+                document.getElementById('workers-value').textContent = e.target.value;
             });
             
-            document.getElementById('keyLength').addEventListener('input', (e) => {
-                document.getElementById('keyLengthValue').textContent = e.target.value;
-            });
-            
-            document.getElementById('resultsLimit').addEventListener('input', (e) => {
-                document.getElementById('resultsLimitValue').textContent = e.target.value;
-            });
-            
-            // Запуск
-            document.getElementById('startBtn').addEventListener('click', () => {
-                const alphabet = document.getElementById('alphabet').value;
+            // Start cracking
+            startBtn.addEventListener('click', () => {
                 const ciphertext = document.getElementById('ciphertext').value;
-                const maxKeyLength = parseInt(document.getElementById('keyLength').value);
-                const method = document.getElementById('scoringMethod').value;
-                const workers = parseInt(document.getElementById('workers').value);
+                if (!ciphertext) {
+                    alert('Please enter ciphertext');
+                    return;
+                }
                 
-                breaker.start(alphabet, ciphertext, maxKeyLength, method, workers);
+                const options = {
+                    maxKeyLength: parseInt(document.getElementById('key-length').value),
+                    workers: parseInt(document.getElementById('workers').value),
+                    knownPlaintext: document.getElementById('known-text').value
+                };
+                
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                document.getElementById('status').textContent = 'Running...';
+                document.getElementById('results').innerHTML = '';
+                
+                cracker.start(ciphertext, options);
             });
             
-            document.getElementById('stopBtn').addEventListener('click', () => breaker.stop());
+            // Stop cracking
+            stopBtn.addEventListener('click', () => {
+                if (cracker.stop()) {
+                    document.getElementById('status').textContent = 'Stopped';
+                    startBtn.disabled = false;
+                    stopBtn.disabled = true;
+                }
+            });
         });
     </script>
 </body>
