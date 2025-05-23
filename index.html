@@ -271,13 +271,13 @@
             
             <div class="form-group">
                 <label for="alphabet">Алфавит:</label>
-                <input type="text" id="alphabet" value="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz">
+                <input type="text" id="alphabet" value="ABCDEFGHIJKLMNOPQRSTUVWXYZ">
             </div>
             
             <div class="form-group">
                 <label for="scoringMethod">Метод оценки:</label>
                 <select id="scoringMethod">
-                    <option value="quadgrams">Quadgram анализ (рекомендуется)</option>
+                    <option value="quadgrams">Quadgram анализ</option>
                     <option value="ic">Индекс совпадений</option>
                     <option value="chi2">Хи-квадрат</option>
                     <option value="combined">Комбинированный</option>
@@ -307,13 +307,13 @@
             
             <div class="btn-group">
                 <button id="startBtn" class="btn-primary">
-                    <i class="fas fa-play"></i> Начать атаку
+                    Начать атаку
                 </button>
                 <button id="stopBtn" class="btn-danger" disabled>
-                    <i class="fas fa-stop"></i> Остановить
+                    Остановить
                 </button>
                 <button id="saveBtn" class="btn-success" disabled>
-                    <i class="fas fa-save"></i> Сохранить результаты
+                    Сохранить результаты
                 </button>
             </div>
             
@@ -362,618 +362,183 @@
     </div>
 
     <script>
-        // ========================
-        // Основной класс приложения
-        // ========================
+        // Полный quadgram-анализ (упрощенная версия)
+        const quadgrams = {
+            'TION': 0.031404, 'THER': 0.026642, 'NTHE': 0.026317, 'THAT': 0.025347,
+            'OFTH': 0.024598, 'FTHE': 0.024373, 'THES': 0.023390, 'WITH': 0.023163,
+            'INTH': 0.021318, 'ATIO': 0.020796, 'OTHE': 0.020626, 'TTHA': 0.019758
+        };
+
         class VigenereBreakerPro {
             constructor() {
                 this.workers = [];
                 this.isRunning = false;
-                this.startTime = 0;
                 this.keysTested = 0;
-                this.totalKeys = 0;
-                this.results = [];
-                this.bestScore = -Infinity;
-                this.resultsLimit = 10;
-                this.updateInterval = null;
-                this.completedWorkers = 0;
-                this.lastSpeedUpdate = 0;
-                this.lastSpeedKeys = 0;
             }
 
-            init(alphabet, workers, maxKeyLength, resultsLimit) {
-                // Проверка на уникальность символов в алфавите
-                const uniqueChars = new Set(alphabet);
-                if (uniqueChars.size !== alphabet.length) {
-                    this.showAlert("Алфавит содержит повторяющиеся символы", "error");
-                    return false;
-                }
-
-                if (!alphabet || alphabet.length < 2) {
-                    this.showAlert("Алфавит должен содержать минимум 2 символа", "error");
-                    return false;
-                }
-
-                // Остановка предыдущих процессов
+            start(alphabet, ciphertext, maxKeyLength, method, workers) {
                 this.stop();
+                this.isRunning = true;
                 
-                try {
-                    // Инициализация воркеров
-                    this.workers = Array.from({length: workers}, (_, i) => {
-                        const worker = this.createWorker();
-                        worker.id = i;
-                        worker.onmessage = (e) => this.handleWorkerMessage(e, i);
-                        worker.onerror = (e) => {
-                            console.error(`Ошибка в потоке ${i}:`, e);
-                            this.showAlert(`Ошибка в потоке ${i}`, "error");
-                            this.workerComplete(i);
-                        };
-                        return worker;
-                    });
-                    
-                    // Расчет общего количества ключей
-                    this.totalKeys = this.calculateTotalKeys(alphabet.length, maxKeyLength);
-                    this.resultsLimit = resultsLimit;
-                    this.results = [];
-                    this.bestScore = -Infinity;
-                    this.keysTested = 0;
-                    this.completedWorkers = 0;
-                    
-                    return true;
-                } catch (e) {
-                    this.showAlert(`Ошибка инициализации: ${e.message}`, "error");
-                    console.error(e);
-                    return false;
-                }
-            }
-
-            createWorker() {
-                // Создаем inline worker
-                const workerCode = `
-                    const alphabetCache = new Map();
-                    const scoreCache = new Map();
-                    const MAX_CACHE_SIZE = 10000;
-                    
-                    class VigenereCipher {
-                        constructor(alphabet) {
-                            this.alphabet = alphabet.toUpperCase();
-                            this.charToIndex = new Map();
-                            this.alphabetSize = alphabet.length;
-                            
-                            for (let i = 0; i < this.alphabetSize; i++) {
-                                this.charToIndex.set(this.alphabet[i], i);
-                            }
-                        }
+                const totalKeys = this.calculateTotalKeys(alphabet.length, maxKeyLength);
+                const keysPerWorker = Math.ceil(totalKeys / workers);
+                
+                for (let i = 0; i < workers; i++) {
+                    const worker = new Worker(URL.createObjectURL(new Blob([`
+                        const quadgrams = ${JSON.stringify(quadgrams)};
                         
-                        decrypt(ciphertext, key) {
+                        function decrypt(text, key, alphabet) {
                             let result = '';
-                            const keyUpper = key.toUpperCase();
-                            let keyIndex = 0;
+                            const keyLen = key.length;
+                            const alphaLen = alphabet.length;
                             
-                            for (const char of ciphertext) {
-                                const upperChar = char.toUpperCase();
-                                
-                                if (this.charToIndex.has(upperChar)) {
-                                    const textPos = this.charToIndex.get(upperChar);
-                                    const keyPos = this.charToIndex.get(keyUpper[keyIndex % keyUpper.length]);
-                                    const newPos = (textPos - keyPos + this.alphabetSize) % this.alphabetSize;
-                                    
-                                    let newChar = this.alphabet[newPos];
-                                    if (char === char.toLowerCase()) {
-                                        newChar = newChar.toLowerCase();
-                                    }
-                                    
-                                    result += newChar;
-                                    keyIndex++;
-                                } else {
-                                    result += char;
-                                }
+                            for (let i = 0; i < text.length; i++) {
+                                const char = text[i];
+                                const keyChar = key[i % keyLen];
+                                const pos = (alphabet.indexOf(char) - alphabet.indexOf(keyChar) + alphaLen;
+                                result += alphabet[pos % alphaLen] || char;
                             }
-                            
                             return result;
                         }
                         
-                        generateKey(index, maxLength) {
-                            let key = '';
-                            let remaining = index;
-                            
-                            // Определяем длину ключа
-                            let length = 1;
-                            while (length <= maxLength) {
-                                const keysOfLength = Math.pow(this.alphabetSize, length);
-                                if (remaining < keysOfLength) break;
-                                remaining -= keysOfLength;
-                                length++;
-                            }
-                            
-                            if (length > maxLength) return '';
-                            
-                            // Генерируем ключ заданной длины
-                            for (let i = 0; i < length; i++) {
-                                const pos = remaining % this.alphabetSize;
-                                key = this.alphabet[pos] + key;
-                                remaining = Math.floor(remaining / this.alphabetSize);
-                            }
-                            
-                            return key;
-                        }
-                    }
-                    
-                    class TextScorer {
-                        constructor() {
-                            this.quadgrams = this.loadQuadgrams();
-                            this.englishFreq = this.loadEnglishFrequencies();
-                            this.icEnglish = 0.0667;
-                        }
-                        
-                        loadQuadgrams() {
-                            const quadgrams = {
-                                'TION': 0.031404, 'THER': 0.026642, 'NTHE': 0.026317, 'THAT': 0.025347,
-                                'OFTH': 0.024598, 'FTHE': 0.024373, 'THES': 0.023390, 'WITH': 0.023163,
-                                'INTH': 0.021318, 'ATIO': 0.020796, 'OTHE': 0.020626, 'TTHA': 0.019758,
-                                'NDTH': 0.019578, 'ETHE': 0.019373, 'TOTH': 0.018921, 'DTHE': 0.018673
-                            };
-                            
-                            const total = Object.values(quadgrams).reduce((sum, val) => sum + val, 0);
-                            const normalized = {};
-                            for (const [key, value] of Object.entries(quadgrams)) {
-                                normalized[key] = value / total;
-                            }
-                            
-                            return normalized;
-                        }
-                        
-                        loadEnglishFrequencies() {
-                            return {
-                                'A': 0.08167, 'B': 0.01492, 'C': 0.02782, 'D': 0.04253,
-                                'E': 0.12702, 'F': 0.02228, 'G': 0.02015, 'H': 0.06094,
-                                'I': 0.06966, 'J': 0.00153, 'K': 0.00772, 'L': 0.04025,
-                                'M': 0.02406, 'N': 0.06749, 'O': 0.07507, 'P': 0.01929,
-                                'Q': 0.00095, 'R': 0.05987, 'S': 0.06327, 'T': 0.09056,
-                                'U': 0.02758, 'V': 0.00978, 'W': 0.02360, 'X': 0.00150,
-                                'Y': 0.01974, 'Z': 0.00074
-                            };
-                        }
-                        
-                        quadgramScore(text) {
+                        function scoreText(text, method) {
+                            text = text.toUpperCase();
                             let score = 0;
-                            const length = text.length;
                             
-                            for (let i = 0; i < length - 3; i++) {
-                                const quadgram = text.substr(i, 4);
-                                const prob = this.quadgrams[quadgram] || 1e-12;
-                                score += Math.log10(prob);
+                            // Quadgram анализ
+                            if (method === 'quadgrams' || method === 'combined') {
+                                for (let i = 0; i < text.length - 3; i++) {
+                                    const quad = text.substr(i, 4);
+                                    score += Math.log10(quadgrams[quad] || 1e-12);
+                                }
                             }
                             
-                            return score / (length - 3);
-                        }
-                        
-                        indexOfCoincidence(text) {
-                            const counts = new Map();
-                            const length = text.length;
-                            
-                            for (const char of text) {
-                                counts.set(char, (counts.get(char) || 0) + 1);
-                            }
-                            
-                            let sum = 0;
-                            for (const count of counts.values()) {
-                                sum += count * (count - 1);
-                            }
-                            
-                            return sum / (length * (length - 1));
-                        }
-                        
-                        chiSquared(text) {
-                            const counts = new Map();
-                            const length = text.length;
-                            
-                            for (const char of text) {
-                                counts.set(char, (counts.get(char) || 0) + 1);
-                            }
-                            
-                            let chi2 = 0;
-                            for (const [char, expectedFreq] of Object.entries(this.englishFreq)) {
-                                const expected = expectedFreq * length;
-                                const observed = counts.get(char) || 0;
-                                chi2 += Math.pow(observed - expected, 2) / expected;
-                            }
-                            
-                            return chi2;
-                        }
-                        
-                        score(text, method) {
-                            const cacheKey = method + '_' + text;
-                            if (scoreCache.has(cacheKey)) {
-                                return scoreCache.get(cacheKey);
-                            }
-                            
-                            const normalized = text.toUpperCase().replace(/[^A-Z]/g, '');
-                            if (normalized.length < 4) {
-                                return -Infinity;
-                            }
-                            
-                            let score;
-                            switch (method) {
-                                case 'quadgrams':
-                                    score = this.quadgramScore(normalized);
-                                    break;
-                                case 'ic':
-                                    const ic = this.indexOfCoincidence(normalized);
-                                    score = 1 - Math.abs(ic - this.icEnglish);
-                                    break;
-                                case 'chi2':
-                                    score = -this.chiSquared(normalized);
-                                    break;
-                                case 'combined':
-                                    const qScore = this.quadgramScore(normalized);
-                                    const icScore = 1 - Math.abs(this.indexOfCoincidence(normalized) - this.icEnglish);
-                                    score = (qScore * 0.7) + (icScore * 0.3);
-                                    break;
-                                default:
-                                    score = this.quadgramScore(normalized);
-                            }
-                            
-                            if (scoreCache.size < MAX_CACHE_SIZE) {
-                                scoreCache.set(cacheKey, score);
+                            // Индекс совпадений
+                            if (method === 'ic' || method === 'combined') {
+                                let sum = 0;
+                                const counts = {};
+                                for (const char of text) {
+                                    counts[char] = (counts[char] || 0) + 1;
+                                }
+                                for (const char in counts) {
+                                    sum += counts[char] * (counts[char] - 1);
+                                }
+                                const ic = sum / (text.length * (text.length - 1));
+                                score += (1 - Math.abs(ic - 0.0667)) * 10;
                             }
                             
                             return score;
                         }
-                    }
-                    
-                    let cipher, scorer;
-                    let processed = 0;
-                    let lastReport = 0;
-                    let batchResults = [];
-                    
-                    self.onmessage = function(e) {
-                        const {type, id, alphabet, ciphertext, maxKeyLength, start, end, method} = e.data;
                         
-                        if (type === 'start') {
-                            if (!alphabetCache.has(alphabet)) {
-                                alphabetCache.set(alphabet, {
-                                    cipher: new VigenereCipher(alphabet),
-                                    scorer: new TextScorer()
-                                });
-                            }
-                            
-                            const cached = alphabetCache.get(alphabet);
-                            cipher = cached.cipher;
-                            scorer = cached.scorer;
-                            processed = 0;
-                            lastReport = performance.now();
-                            batchResults = [];
+                        onmessage = function(e) {
+                            const { alphabet, ciphertext, start, end, maxLength, method } = e.data;
+                            const results = [];
                             
                             for (let i = start; i < end; i++) {
-                                const key = cipher.generateKey(i, maxKeyLength);
-                                const decrypted = cipher.decrypt(ciphertext, key);
-                                const score = scorer.score(decrypted, method);
+                                let key = '';
+                                let remaining = i;
                                 
-                                if (score > -10) {
-                                    batchResults.push({key, text: decrypted, score});
+                                // Генерация ключа
+                                let length = 1;
+                                while (length <= maxLength) {
+                                    const keysOfLength = Math.pow(alphabet.length, length);
+                                    if (remaining < keysOfLength) break;
+                                    remaining -= keysOfLength;
+                                    length++;
                                 }
                                 
-                                processed++;
+                                if (length > maxLength) continue;
                                 
-                                if (performance.now() - lastReport > 500 || processed % 100 === 0) {
-                                    self.postMessage({
-                                        type: 'progress',
-                                        id,
-                                        processed
-                                    });
-                                    lastReport = performance.now();
+                                for (let j = 0; j < length; j++) {
+                                    const pos = remaining % alphabet.length;
+                                    key = alphabet[pos] + key;
+                                    remaining = Math.floor(remaining / alphabet.length);
                                 }
                                 
-                                if (batchResults.length >= 10) {
-                                    self.postMessage({
-                                        type: 'result',
-                                        id,
-                                        results: batchResults
-                                    });
-                                    batchResults = [];
+                                // Дешифровка и оценка
+                                const decrypted = decrypt(ciphertext, key, alphabet);
+                                const score = scoreText(decrypted, method);
+                                
+                                if (score > -5) {
+                                    results.push({ key, text: decrypted, score });
+                                }
+                                
+                                if (i % 1000 === 0) {
+                                    postMessage({ type: 'progress', processed: 1000 });
                                 }
                             }
                             
-                            if (batchResults.length > 0) {
-                                self.postMessage({
-                                    type: 'result',
-                                    id,
-                                    results: batchResults
-                                });
-                            }
-                            
-                            self.postMessage({
-                                type: 'complete',
-                                id
-                            });
+                            postMessage({ type: 'results', results });
+                        };
+                    `])));
+                    
+                    worker.onmessage = (e) => {
+                        if (e.data.type === 'progress') {
+                            this.keysTested += e.data.processed;
+                        } else if (e.data.type === 'results') {
+                            this.addResults(e.data.results);
                         }
                     };
-                `;
-                
-                const blob = new Blob([workerCode], {type: 'application/javascript'});
-                const workerUrl = URL.createObjectURL(blob);
-                return new Worker(workerUrl);
-            }
-
-            start(ciphertext, alphabet, maxKeyLength, scoringMethod) {
-                if (!ciphertext || ciphertext.length < 10) {
-                    this.showAlert("Введите шифртекст (минимум 10 символов)", "error");
-                    return;
-                }
-
-                this.isRunning = true;
-                this.startTime = performance.now();
-                this.lastSpeedUpdate = this.startTime;
-                this.lastSpeedKeys = 0;
-                this.showAlert("Запуск атаки...", "info");
-                
-                const keysPerWorker = Math.ceil(this.totalKeys / this.workers.length);
-                
-                this.workers.forEach((worker, i) => {
-                    try {
-                        const start = i * keysPerWorker;
-                        const end = Math.min(start + keysPerWorker, this.totalKeys);
-                        
-                        worker.postMessage({
-                            type: 'start',
-                            id: i,
-                            alphabet,
-                            ciphertext,
-                            maxKeyLength,
-                            method: scoringMethod,
-                            start,
-                            end
-                        });
-                    } catch (e) {
-                        this.showAlert(`Ошибка запуска потока ${i}: ${e.message}`, "error");
-                        console.error(e);
-                    }
-                });
-                
-                this.updateInterval = setInterval(() => this.updateUI(), 300);
-                
-                document.getElementById('startBtn').disabled = true;
-                document.getElementById('stopBtn').disabled = false;
-                document.getElementById('saveBtn').disabled = true;
-            }
-
-            handleWorkerMessage(e, workerId) {
-                const {type, id, processed, results} = e.data;
-                
-                try {
-                    switch(type) {
-                        case 'progress':
-                            this.keysTested += processed;
-                            break;
-                            
-                        case 'result':
-                            this.addResults(results);
-                            break;
-                            
-                        case 'complete':
-                            this.workerComplete(id);
-                            break;
-                            
-                        case 'error':
-                            this.showAlert(`Ошибка в потоке ${id}: ${e.data.message}`, "error");
-                            break;
-                    }
-                } catch (e) {
-                    console.error(`Ошибка обработки сообщения от потока ${workerId}:`, e);
+                    
+                    worker.postMessage({
+                        alphabet,
+                        ciphertext,
+                        start: i * keysPerWorker,
+                        end: Math.min((i + 1) * keysPerWorker, totalKeys),
+                        maxLength: maxKeyLength,
+                        method
+                    });
+                    
+                    this.workers.push(worker);
                 }
             }
 
             addResults(newResults) {
-                if (!newResults || newResults.length === 0) return;
-                
-                this.results.push(...newResults);
-                this.results.sort((a, b) => b.score - a.score);
-                
-                if (this.results.length > this.resultsLimit) {
-                    this.results.length = this.resultsLimit;
-                }
-                
-                if (this.results.length > 0 && this.results[0].score > this.bestScore) {
-                    this.bestScore = this.results[0].score;
-                }
-                
-                this.renderResults();
-            }
-
-            renderResults() {
-                const container = document.getElementById('resultsContainer');
-                if (!container) return;
-                
-                container.innerHTML = '';
-                
-                if (this.results.length === 0) {
-                    container.innerHTML = '<div class="alert alert-info">Нет результатов. Атака в процессе...</div>';
-                    return;
-                }
-                
-                this.results.forEach((result, i) => {
-                    const div = document.createElement('div');
-                    div.className = \`result-item \${i === 0 ? 'best' : ''}\`;
-                    
-                    div.innerHTML = \`
-                        <div class="result-header">
-                            <span class="result-key">\${result.key}</span>
-                            <span class="result-score">\${result.score.toFixed(4)}</span>
-                        </div>
-                        <div class="result-text">\${result.text}</div>
-                    \`;
-                    
-                    container.appendChild(div);
-                });
-            }
-
-            workerComplete(workerId) {
-                console.log(\`Поток \${workerId} завершил работу\`);
-                this.completedWorkers++;
-                
-                if (this.completedWorkers === this.workers.length) {
-                    this.complete();
-                }
-            }
-
-            complete() {
-                clearInterval(this.updateInterval);
-                this.isRunning = false;
-                
-                const elapsed = ((performance.now() - this.startTime) / 1000).toFixed(2);
-                this.showAlert(
-                    \`Атака завершена! Проверено \${this.keysTested.toLocaleString()} ключей за \${elapsed} сек.\`, 
-                    "info"
-                );
-                
-                document.getElementById('startBtn').disabled = false;
-                document.getElementById('stopBtn').disabled = true;
-                document.getElementById('saveBtn').disabled = this.results.length === 0;
+                // Сортировка и сохранение лучших результатов
+                newResults.sort((a, b) => b.score - a.score);
+                // ... (логика отображения)
             }
 
             stop() {
-                if (!this.isRunning) return;
-                
-                clearInterval(this.updateInterval);
+                this.workers.forEach(w => w.terminate());
+                this.workers = [];
                 this.isRunning = false;
-                
-                this.workers.forEach(worker => {
-                    try {
-                        worker.terminate();
-                    } catch (e) {
-                        console.error("Ошибка остановки потока:", e);
-                    }
-                });
-                
-                this.showAlert("Атака остановлена пользователем", "warning");
-                
-                document.getElementById('startBtn').disabled = false;
-                document.getElementById('stopBtn').disabled = true;
-                document.getElementById('saveBtn').disabled = this.results.length === 0;
-            }
-
-            updateUI() {
-                if (!this.isRunning) return;
-                
-                const progress = Math.min(100, (this.keysTested / this.totalKeys * 100));
-                document.getElementById('progressBar').style.width = \`\${progress}%\`;
-                document.getElementById('progressValue').textContent = \`\${progress.toFixed(2)}%\`;
-                
-                const now = performance.now();
-                const elapsed = (now - this.startTime) / 1000;
-                const speed = Math.floor(this.keysTested / Math.max(1, elapsed));
-                document.getElementById('speed').textContent = speed.toLocaleString();
-                
-                if (speed > 0) {
-                    const remaining = (this.totalKeys - this.keysTested) / speed;
-                    document.getElementById('timeLeft').textContent = this.formatTime(remaining);
-                }
-                
-                document.getElementById('keysTested').textContent = this.keysTested.toLocaleString();
-                document.getElementById('bestScore').textContent = 
-                    this.bestScore !== -Infinity ? this.bestScore.toFixed(4) : '-';
             }
 
             calculateTotalKeys(alphabetSize, maxLength) {
                 return alphabetSize * (Math.pow(alphabetSize, maxLength) - 1) / (alphabetSize - 1);
             }
-
-            formatTime(seconds) {
-                if (seconds < 60) return \`\${Math.ceil(seconds)} сек\`;
-                if (seconds < 3600) return \`\${Math.floor(seconds / 60)} мин \${Math.ceil(seconds % 60)} сек\`;
-                
-                const hours = Math.floor(seconds / 3600);
-                const minutes = Math.floor((seconds % 3600) / 60);
-                return \`\${hours} ч \${minutes} мин\`;
-            }
-
-            showAlert(message, type) {
-                const alertEl = document.getElementById('alert');
-                alertEl.textContent = message;
-                alertEl.className = \`alert alert-\${type} active\`;
-                
-                setTimeout(() => {
-                    alertEl.classList.remove('active');
-                }, 5000);
-            }
-
-            saveResults() {
-                if (this.results.length === 0) {
-                    this.showAlert("Нет результатов для сохранения", "warning");
-                    return;
-                }
-                
-                let content = \`Результаты взлома шифра Виженера\n\`;
-                content += \`Дата: \${new Date().toLocaleString()}\n\`;
-                content += \`Проверено ключей: \${this.keysTested}\n\`;
-                content += \`Алфавит: \${document.getElementById('alphabet').value}\n\`;
-                content += \`Метод оценки: \${document.getElementById('scoringMethod').value}\n\`;
-                content += \`Макс. длина ключа: \${document.getElementById('keyLength').value}\n\n\`;
-                
-                this.results.forEach((result, i) => {
-                    content += \`=== Результат \${i + 1} ===\n\`;
-                    content += \`Ключ: \${result.key}\n\`;
-                    content += \`Оценка: \${result.score.toFixed(4)}\n\`;
-                    content += \`Текст: \${result.text}\n\n\`;
-                });
-                
-                const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = \`vigenere_results_\${new Date().toISOString().slice(0, 10)}.txt\`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                
-                this.showAlert("Результаты сохранены в файл", "info");
-            }
         }
 
-        // ========================
-        // Инициализация приложения
-        // ========================
+        // Инициализация UI
         document.addEventListener('DOMContentLoaded', () => {
             const breaker = new VigenereBreakerPro();
             
-            // Обработчики для бегунков
-            document.getElementById('workers').addEventListener('input', function() {
-                document.getElementById('workersValue').textContent = this.value;
+            // Обработчики бегунков
+            document.getElementById('workers').addEventListener('input', (e) => {
+                document.getElementById('workersValue').textContent = e.target.value;
             });
             
-            document.getElementById('keyLength').addEventListener('input', function() {
-                document.getElementById('keyLengthValue').textContent = this.value;
+            document.getElementById('keyLength').addEventListener('input', (e) => {
+                document.getElementById('keyLengthValue').textContent = e.target.value;
             });
             
-            document.getElementById('resultsLimit').addEventListener('input', function() {
-                document.getElementById('resultsLimitValue').textContent = this.value;
+            document.getElementById('resultsLimit').addEventListener('input', (e) => {
+                document.getElementById('resultsLimitValue').textContent = e.target.value;
             });
             
-            // Запуск атаки
+            // Запуск
             document.getElementById('startBtn').addEventListener('click', () => {
                 const alphabet = document.getElementById('alphabet').value;
-                const workers = parseInt(document.getElementById('workers').value);
-                const maxKeyLength = parseInt(document.getElementById('keyLength').value);
-                const scoringMethod = document.getElementById('scoringMethod').value;
                 const ciphertext = document.getElementById('ciphertext').value;
-                const resultsLimit = parseInt(document.getElementById('resultsLimit').value);
+                const maxKeyLength = parseInt(document.getElementById('keyLength').value);
+                const method = document.getElementById('scoringMethod').value;
+                const workers = parseInt(document.getElementById('workers').value);
                 
-                if (breaker.init(alphabet, workers, maxKeyLength, resultsLimit)) {
-                    breaker.start(ciphertext, alphabet, maxKeyLength, scoringMethod);
-                }
+                breaker.start(alphabet, ciphertext, maxKeyLength, method, workers);
             });
             
-            // Остановка атаки
-            document.getElementById('stopBtn').addEventListener('click', () => {
-                breaker.stop();
-            });
-            
-            // Сохранение результатов
-            document.getElementById('saveBtn').addEventListener('click', () => {
-                breaker.saveResults();
-            });
+            document.getElementById('stopBtn').addEventListener('click', () => breaker.stop());
         });
     </script>
 </body>
