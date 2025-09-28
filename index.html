@@ -342,7 +342,7 @@
                 <div class="control-group">
                     <div class="input-group">
                         <label>ENCRYPTION MASTER KEY</label>
-                        <input type="password" id="encryptionKey" value="quantum-secure-industrial-master-key-2024" placeholder="Enter strong encryption key (min 16 chars)">
+                        <input type="password" id="encryptionKey" value="quantum-secure-key-2024" placeholder="Enter strong encryption key (min 16 chars)">
                     </div>
                     
                     <div class="input-group">
@@ -360,7 +360,7 @@
                     <div class="input-group">
                         <label>OPERATION MODE</label>
                         <select id="operationMode">
-                            <option value="cbc">CBC - Cipher Block Chaining</option>
+                            <option value="cbc" selected>CBC - Cipher Block Chaining</option>
                             <option value="ofb">OFB - Output Feedback</option>
                             <option value="cfb">CFB - Cipher Feedback</option>
                         </select>
@@ -369,7 +369,7 @@
                     <div class="input-group">
                         <label>KEY DERIVATION FUNCTION</label>
                         <select id="kdfAlgorithm">
-                            <option value="pbkdf2">PBKDF2 (NIST Standard)</option>
+                            <option value="pbkdf2" selected>PBKDF2 (NIST Standard)</option>
                             <option value="argon2">Argon2id (Password Hashing Winner)</option>
                             <option value="scrypt">Scrypt (Memory-Hard)</option>
                         </select>
@@ -421,7 +421,7 @@
                     <div class="input-group">
                         <label>RANDOMNESS SOURCE</label>
                         <select id="randomnessMode">
-                            <option value="crypto">CSPRNG - Cryptographically Secure</option>
+                            <option value="crypto" selected>CSPRNG - Cryptographically Secure</option>
                             <option value="deterministic">Deterministic (Testing Only)</option>
                         </select>
                     </div>
@@ -429,7 +429,7 @@
                     <div class="input-group">
                         <label>DATA PADDING</label>
                         <select id="paddingMode">
-                            <option value="pkcs7">PKCS7 (Recommended)</option>
+                            <option value="pkcs7" selected>PKCS7 (Recommended)</option>
                             <option value="zeros">Zero Padding</option>
                             <option value="none">No Padding</option>
                         </select>
@@ -601,7 +601,7 @@ SECURITY: Military-grade encryption
 
                 if (progressCallback) progressCallback(10, "Generating professional character set...");
 
-                // Generate professional character set
+                // Generate professional character set - FIXED VERSION
                 this.characterSet = await this.generateProfessionalCharacterSet(config.characters, encryptionKey);
                 const totalPairs = config.characters * config.characters;
 
@@ -654,28 +654,64 @@ SECURITY: Military-grade encryption
             async generateProfessionalCharacterSet(count, key) {
                 const chars = new Set();
                 const usedCodePoints = new Set();
-                const keyBuffer = new TextEncoder().encode(key);
                 
-                while (chars.size < count) {
-                    const randomBuffer = new Uint8Array(4);
-                    crypto.getRandomValues(randomBuffer);
+                // Use predefined safe Chinese character ranges
+                const cjkRanges = [
+                    [0x4E00, 0x9FFF],    // CJK Unified Ideographs
+                    [0x3400, 0x4DBF],    // CJK Unified Ideographs Extension A
+                    [0x20000, 0x2A6DF],  // CJK Unified Ideographs Extension B
+                    [0x2A700, 0x2B73F],  // CJK Unified Ideographs Extension C
+                    [0x2B740, 0x2B81F],  // CJK Unified Ideographs Extension D
+                    [0x2B820, 0x2CEAF]   // CJK Unified Ideographs Extension E
+                ];
+
+                let attempts = 0;
+                const maxAttempts = count * 10;
+
+                while (chars.size < count && attempts < maxAttempts) {
+                    attempts++;
                     
-                    // Mix with key material for additional entropy
-                    for (let i = 0; i < 4; i++) {
-                        randomBuffer[i] ^= keyBuffer[i % keyBuffer.length];
+                    // Select random range
+                    const rangeIndex = Math.floor(Math.random() * cjkRanges.length);
+                    const [min, max] = cjkRanges[rangeIndex];
+                    
+                    // Generate random code point within range
+                    const rangeSize = max - min + 1;
+                    const randomOffset = Math.floor(Math.random() * rangeSize);
+                    const codePoint = min + randomOffset;
+                    
+                    // Validate code point is within safe range
+                    if (codePoint >= min && codePoint <= max) {
+                        try {
+                            const char = String.fromCodePoint(codePoint);
+                            if (!usedCodePoints.has(codePoint)) {
+                                usedCodePoints.add(codePoint);
+                                chars.add(char);
+                            }
+                        } catch (e) {
+                            // Skip invalid code points
+                            continue;
+                        }
                     }
-                    
-                    const codePoint = 0x4E00 + (this.arrayToInt(randomBuffer) % 20902);
-                    
-                    if (!usedCodePoints.has(codePoint)) {
-                        usedCodePoints.add(codePoint);
-                        chars.add(String.fromCodePoint(codePoint));
-                    }
-                    
-                    // Prevent infinite loop
-                    if (chars.size >= 20902) break;
                 }
-                
+
+                // If we didn't get enough characters, fill with safe defaults
+                if (chars.size < count) {
+                    this.log(`Warning: Only generated ${chars.size}/${count} unique characters. Using safe defaults.`, 'warning');
+                    
+                    // Add safe Chinese characters from basic block
+                    for (let i = 0x4E00; i <= 0x4E00 + count && chars.size < count; i++) {
+                        try {
+                            const char = String.fromCodePoint(i);
+                            if (!chars.has(char)) {
+                                chars.add(char);
+                            }
+                        } catch (e) {
+                            continue;
+                        }
+                    }
+                }
+
                 return Array.from(chars);
             }
 
@@ -849,14 +885,6 @@ SECURITY: Military-grade encryption
                     startBit += bits;
                 } while (value >= maxExclusive);
                 return value;
-            }
-
-            arrayToInt(array) {
-                let result = 0;
-                for (let i = 0; i < array.length; i++) {
-                    result = (result << 8) | array[i];
-                }
-                return result;
             }
 
             // Professional Encryption Method - STRICT 2:2 RATIO
@@ -1070,6 +1098,15 @@ SECURITY: Military-grade encryption
                 switch (paddingMode) {
                     case 'pkcs7':
                         const paddingLength = data[data.length - 1];
+                        // Validate padding
+                        if (paddingLength > data.length) {
+                            throw new Error("Invalid PKCS7 padding");
+                        }
+                        for (let i = data.length - paddingLength; i < data.length; i++) {
+                            if (data[i] !== paddingLength) {
+                                throw new Error("Invalid PKCS7 padding");
+                            }
+                        }
                         return data.slice(0, data.length - paddingLength);
                     case 'zeros':
                         // Find last non-zero byte
@@ -1485,4 +1522,4 @@ SECURITY: Military-grade encryption
         });
     </script>
 </body>
-    </html>
+</html>
