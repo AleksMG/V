@@ -1,401 +1,492 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chinese Homophonic Cipher Pro</title>
+    <title>Professional Chinese Homophonic Cipher</title>
     <style>
-        :root {
-            --primary: #2563eb;
-            --primary-dark: #1d4ed8;
-            --secondary: #7c3aed;
-            --background: #0f172a;
-            --surface: #1e293b;
-            --surface-alt: #334155;
-            --text: #f1f5f9;
-            --text-dim: #94a3b8;
-            --border: #475569;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            background: var(--background); 
-            color: var(--text); 
+
+        body {
             font-family: 'Courier New', monospace;
+            background: #0f172a;
+            color: #f1f5f9;
             line-height: 1.6;
             padding: 20px;
             min-height: 100vh;
         }
-        
-        .container { 
-            max-width: 1400px; 
+
+        .container {
+            max-width: 1200px;
             margin: 0 auto;
-            display: grid;
-            grid-template-columns: 1fr 400px;
-            gap: 24px;
         }
-        
-        .panel { 
-            background: var(--surface);
-            padding: 32px;
-            border-radius: 16px;
-            border: 1px solid var(--border);
-            margin-bottom: 24px;
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #1e293b;
+            border-radius: 10px;
+            border: 1px solid #334155;
         }
-        
+
+        .panel {
+            background: #1e293b;
+            padding: 25px;
+            border-radius: 10px;
+            border: 1px solid #334155;
+            margin-bottom: 20px;
+        }
+
         .panel-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 24px;
-            color: var(--primary);
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #60a5fa;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
-        
+
         .input-group {
-            margin-bottom: 24px;
+            margin-bottom: 20px;
         }
-        
-        .input-label {
+
+        label {
             display: block;
             margin-bottom: 8px;
             font-weight: 600;
-            color: var(--text-dim);
+            color: #94a3b8;
             font-size: 0.9rem;
         }
-        
-        textarea, input, select {
+
+        input, textarea, select {
             width: 100%;
-            padding: 16px;
-            background: var(--surface-alt);
-            border: 2px solid var(--border);
-            border-radius: 12px;
-            color: var(--text);
+            padding: 12px;
+            background: #334155;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            color: #f1f5f9;
             font-size: 1rem;
             font-family: inherit;
         }
-        
+
         textarea {
-            min-height: 120px;
+            min-height: 100px;
             resize: vertical;
         }
-        
+
         .btn {
-            padding: 16px 24px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            padding: 12px 24px;
+            background: #3b82f6;
             color: white;
             border: none;
-            border-radius: 12px;
+            border-radius: 6px;
             font-weight: 600;
             cursor: pointer;
-            margin: 5px;
+            transition: all 0.3s;
+            font-family: inherit;
         }
-        
-        .btn:hover { opacity: 0.9; }
-        
-        .output-container {
-            margin-top: 24px;
+
+        .btn:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
         }
-        
-        .output-content {
-            background: var(--surface-alt);
-            padding: 20px;
-            border-radius: 12px;
-            border: 1px solid var(--border);
-            white-space: pre-wrap;
-            word-break: break-all;
-            min-height: 80px;
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        .output-box {
+            background: #334155;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #475569;
+            margin-top: 10px;
+            min-height: 60px;
             max-height: 300px;
             overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
         }
-        
+
         .status {
-            padding: 16px;
-            border-radius: 12px;
-            margin: 16px 0;
+            padding: 12px;
+            border-radius: 6px;
+            margin: 15px 0;
+            font-weight: 600;
         }
-        
-        .success { background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; color: #10b981; }
-        .error { background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; color: #ef4444; }
-        .info { background: rgba(37, 99, 235, 0.1); border: 1px solid var(--primary); color: var(--primary); }
-        
+
+        .status-info {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid #3b82f6;
+            color: #3b82f6;
+        }
+
+        .status-success {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid #10b981;
+            color: #10b981;
+        }
+
+        .status-error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid #ef4444;
+            color: #ef4444;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: #334155;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #60a5fa;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-top: 5px;
+        }
+
         .progress-bar {
             width: 100%;
             height: 6px;
-            background: var(--surface-alt);
+            background: #334155;
             border-radius: 3px;
             overflow: hidden;
-            margin: 16px 0;
+            margin: 15px 0;
         }
-        
+
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, var(--primary), var(--secondary));
-            transition: width 0.3s ease;
-            width: 0%;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            transition: width 0.3s;
         }
-        
-        .stats-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-            margin-top: 20px;
-        }
-        
-        .stat-card {
-            background: var(--surface-alt);
-            padding: 16px;
-            border-radius: 12px;
-            text-align: center;
-        }
-        
-        .stat-value {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--primary);
-        }
-        
-        .stat-label {
-            font-size: 0.8rem;
-            color: var(--text-dim);
+
+        .code-block {
+            background: #0f172a;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #334155;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            margin: 10px 0;
+            overflow-x: auto;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div>
-            <div class="panel">
-                <div class="panel-title">🔐 Криптосистема</div>
-                
-                <div class="input-group">
-                    <label class="input-label">Ключ шифрования</label>
-                    <input type="password" id="cryptoKey" value="quantum-secure-key-2024">
-                </div>
-                
-                <div class="input-group">
-                    <label class="input-label">Количество иероглифов</label>
-                    <select id="charactersCount">
-                        <option value="500">500 иероглифов (250,000 пар)</option>
-                        <option value="1000" selected>1000 иероглифов (1,000,000 пар)</option>
-                        <option value="585">585 иероглифов (342,225 пар)</option>
-                    </select>
-                </div>
-                
-                <button class="btn" onclick="initCipher()">🔄 Инициализировать S-Box</button>
-                <button class="btn" onclick="generateNewKey()">🎲 Новый ключ</button>
-                
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progressFill"></div>
-                </div>
-                
-                <div id="systemStatus" class="status info">⚙️ Система готова</div>
+        <div class="header">
+            <h1>🔐 Chinese Homophonic Cipher System</h1>
+            <p>Professional Implementation - 1000 Characters → 1,000,000 Homophones</p>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">⚙️ SYSTEM INITIALIZATION</div>
+            
+            <div class="input-group">
+                <label>ENCRYPTION KEY</label>
+                <input type="password" id="encryptionKey" value="quantum-secure-key-2024">
             </div>
 
-            <div class="panel">
-                <div class="panel-title">📤 Шифрование</div>
-                
-                <div class="input-group">
-                    <label class="input-label">Исходный текст</label>
-                    <textarea id="plaintext">Secret message! Секретное сообщение! 秘密消息！</textarea>
-                </div>
-                
-                <button class="btn" onclick="encryptText()">🔒 Зашифровать</button>
-                
-                <div class="output-container">
-                    <label class="input-label">Результат шифрования:</label>
-                    <div class="output-content" id="ciphertextOutput"></div>
-                </div>
+            <div class="input-group">
+                <label>CHARACTER SET SIZE</label>
+                <select id="characterSet">
+                    <option value="1000">1000 Characters (1,000,000 homophones)</option>
+                    <option value="500">500 Characters (250,000 homophones)</option>
+                    <option value="256">256 Characters (65,536 homophones)</option>
+                </select>
             </div>
 
-            <div class="panel">
-                <div class="panel-title">📥 Дешифрование</div>
-                
-                <div class="input-group">
-                    <label class="input-label">Китайский текст для дешифрования</label>
-                    <textarea id="ciphertext"></textarea>
+            <button class="btn btn-primary" onclick="initializeCipherSystem()">
+                🚀 INITIALIZE CIPHER SYSTEM
+            </button>
+
+            <div class="progress-bar">
+                <div class="progress-fill" id="initProgress"></div>
+            </div>
+
+            <div id="systemStatus" class="status status-info">
+                ● SYSTEM READY FOR INITIALIZATION
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalHomophones">0</div>
+                    <div class="stat-label">TOTAL HOMOPHONES</div>
                 </div>
-                
-                <button class="btn" onclick="decryptText()">🔓 Дешифровать</button>
-                
-                <div class="output-container">
-                    <label class="input-label">Результат дешифрования:</label>
-                    <div class="output-content" id="decryptedOutput"></div>
+                <div class="stat-card">
+                    <div class="stat-value" id="homophonesPerCell">0</div>
+                    <div class="stat-label">HOMOPHONES/CELL</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="sboxSize">65,536</div>
+                    <div class="stat-label">S-BOX CELLS</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="characterCount">0</div>
+                    <div class="stat-label">CHARACTERS USED</div>
                 </div>
             </div>
         </div>
 
-        <div>
-            <div class="panel">
-                <div class="panel-title">📊 Статистика & Инфо</div>
-                
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-value" id="totalHomophones">0</div>
-                        <div class="stat-label">Всего омофонов</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="homophonesPerValue">0</div>
-                        <div class="stat-label">Омофонов/значение</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="entropyValue">0.00</div>
-                        <div class="stat-label">Энтропия (бит/символ)</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="uniquePairs">0</div>
-                        <div class="stat-label">Уникальных пар</div>
-                    </div>
-                </div>
-                
-                <div class="output-container">
-                    <label class="input-label">Информация о шифре:</label>
-                    <div class="output-content" id="cipherInfo">
-                        • Алгоритм: Гомофоническое шифрование 2байта→2иероглифа
-                        • Истинная случайность выбора омофона
-                        • S-Box: 65,536 ячеек (256×256)
-                        • Все омофоны уникальны и фиксированы
-                    </div>
+        <div class="panel">
+            <div class="panel-title">🔒 ENCRYPTION</div>
+            
+            <div class="input-group">
+                <label>PLAINTEXT (Any Language)</label>
+                <textarea id="plaintext">Top secret message! Confidential data 2024.</textarea>
+            </div>
+
+            <div class="input-group">
+                <label>RANDOMNESS MODE</label>
+                <select id="randomnessMode">
+                    <option value="crypto">Cryptographically Secure (CSPRNG)</option>
+                    <option value="deterministic">Deterministic (Testing)</option>
+                </select>
+            </div>
+
+            <button class="btn btn-success" onclick="encryptMessage()">
+                🔒 ENCRYPT MESSAGE
+            </button>
+
+            <div class="input-group">
+                <label>CIPHERTEXT OUTPUT</label>
+                <div class="output-box" id="ciphertextOutput"></div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">🔓 DECRYPTION</div>
+            
+            <div class="input-group">
+                <label>CHINESE CIPHERTEXT INPUT</label>
+                <textarea id="ciphertextInput"></textarea>
+            </div>
+
+            <button class="btn btn-primary" onclick="decryptMessage()">
+                🔓 DECRYPT MESSAGE
+            </button>
+
+            <div class="input-group">
+                <label>DECRYPTED PLAINTEXT</label>
+                <div class="output-box" id="decryptedOutput"></div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">📊 SYSTEM INFORMATION</div>
+            
+            <div class="code-block">
+// ALGORITHM: Homophonic Substitution Cipher
+// MAPPING: 2 bytes → 2 Chinese characters
+// S-BOX: 65,536 cells (256×256 grid)
+// HOMOPHONES: 1,000,000 unique pairs
+// SECURITY: Key-dependent S-box generation
+// ENTROPY: ~15 bits per Chinese character pair
+            </div>
+
+            <div class="input-group">
+                <label>PERFORMANCE METRICS</label>
+                <div class="output-box" id="performanceMetrics">
+                    System metrics will appear here after initialization...
                 </div>
             </div>
 
-            <div class="panel">
-                <div class="panel-title">🔍 Тестирование распределения</div>
-                
-                <button class="btn" onclick="testDistribution()">🧪 Проверить распределение</button>
-                <button class="btn" onclick="testHomophonicProperty()">🎲 Тест омофонности</button>
-                
-                <div class="output-container">
-                    <label class="input-label">Результаты теста:</label>
-                    <div class="output-content" id="testResults"></div>
-                </div>
-            </div>
+            <button class="btn" onclick="runDiagnostics()">
+                🩺 RUN SYSTEM DIAGNOSTICS
+            </button>
         </div>
     </div>
 
     <script>
-        class ChineseHomophonicCipher {
+        class ProfessionalChineseCipher {
             constructor() {
-                this.characters = this.loadCharacters();
-                this.sBox = new Map();      // value -> array of homophones
+                this.sBox = new Map();
+                this.reverseMap = new Map();
                 this.initialized = false;
-                this.totalValues = 65536;   // 2^16 = 65,536
-            }
-
-            loadCharacters() {
-                // 585 самых частых китайских иероглифов
-                return '的一是不了在人有我他个们中来上大为和国地以子要就下生会而着那得于里过后自之去能对可者年发作也经行种过命多动而学下之方后作进面同法表体化事理心现分所生点还又主样想无但前成只从明本如天看小力起与经想最经但实如好去因现此心开些知样已理结正成物实相事当样然果结比但然较常工形想期动回展特代命度状家受变金指接联原任强极基名已导花带安认至难深保调处题斯近形林土低非感织算至才张每风打较万识影工先具教决展那其才很影确件制表记或济写反被美真切打教速值达装众影声书品每住议步类历车感往具布石节土众另参环清至确影金书特代命度状家受变金指接联原任强极基名已导花带安认至难深保调处题斯近形林土低非感织算至才张每风打较万识影工先具教决展那其才很影确件制表记或济写反被美真切打教速值达装众影声书品每住议步类历车感往具布石节土众另参环清至确影';
-            }
-
-            async init(key, charactersCount = 1000, progressCallback = null) {
-                this.sBox.clear();
-                
-                // Ограничиваем количество иероглифов
-                const actualCharacters = this.characters.substring(0, charactersCount);
-                const totalPairs = actualCharacters.length * actualCharacters.length;
-                
-                if (progressCallback) progressCallback(5, `Генерация ${totalPairs.toLocaleString()} пар...`);
-
-                // 1. Генерируем ВСЕ возможные пары (фиксированные)
-                const allPairs = [];
-                for (let i = 0; i < actualCharacters.length; i++) {
-                    for (let j = 0; j < actualCharacters.length; j++) {
-                        allPairs.push(actualCharacters[i] + actualCharacters[j]);
-                    }
-                    if (progressCallback && i % 50 === 0) {
-                        const progress = 5 + (i / actualCharacters.length) * 25;
-                        progressCallback(progress, `Генерация пар: ${i}/${actualCharacters.length}`);
-                    }
-                }
-
-                if (progressCallback) progressCallback(30, 'Перемешивание пар...');
-
-                // 2. Детерминистичное перемешивание ВСЕХ пар по ключу
-                const shuffledPairs = await this.deterministicShuffle(allPairs, key);
-
-                if (progressCallback) progressCallback(60, 'Распределение по S-Box...');
-
-                // 3. ПРАВИЛЬНОЕ распределение всех пар по 65,536 значениям
-                const basePairsPerValue = Math.floor(totalPairs / this.totalValues);
-                const extraPairs = totalPairs % this.totalValues;
-                
-                let pairIndex = 0;
-                let distributedCount = 0;
-
-                for (let value = 0; value < this.totalValues; value++) {
-                    // Первые extraPairs значений получают на 1 омофон больше
-                    const count = value < extraPairs ? basePairsPerValue + 1 : basePairsPerValue;
-                    
-                    const homophones = shuffledPairs.slice(pairIndex, pairIndex + count);
-                    pairIndex += count;
-                    distributedCount += count;
-                    
-                    this.sBox.set(value, homophones);
-
-                    if (progressCallback && value % 1000 === 0) {
-                        const progress = 60 + (value / this.totalValues) * 35;
-                        progressCallback(progress, `Распределение: ${distributedCount}/${totalPairs}`);
-                    }
-                }
-
-                // Проверка распределения
-                if (distributedCount !== totalPairs) {
-                    throw new Error(`Ошибка распределения: ${distributedCount} ≠ ${totalPairs}`);
-                }
-
-                this.initialized = true;
-
-                if (progressCallback) progressCallback(100, 'Готово');
-
-                return {
-                    totalHomophones: totalPairs,
-                    homophonesPerValue: basePairsPerValue,
-                    extraHomophones: extraPairs,
-                    uniquePairs: allPairs.length,
-                    distributedCount: distributedCount,
-                    charactersUsed: actualCharacters.length
+                this.metrics = {
+                    initializationTime: 0,
+                    encryptionSpeed: 0,
+                    decryptionSpeed: 0,
+                    entropy: 0
                 };
             }
 
-            async deterministicShuffle(array, key) {
-                const result = [...array];
-                const keyStream = await this.generateKeyStream(key, array.length * 8);
-                let keyPos = 0;
+            async initializeSystem(encryptionKey, characterCount = 1000, progressCallback = null) {
+                const startTime = performance.now();
+                
+                this.sBox.clear();
+                this.reverseMap.clear();
+                this.initialized = false;
 
-                // Fisher-Yates shuffle с ключевым потоком
-                for (let i = result.length - 1; i > 0; i--) {
-                    if (keyPos >= keyStream.length - 4) keyPos = 0;
+                // Generate professional character set
+                const characters = this.generateCharacterSet(characterCount);
+                const totalPairs = characterCount * characterCount;
+                const totalCells = 65536; // 256×256 S-Box
+
+                if (progressCallback) progressCallback(10, "Generating homophone pairs...");
+
+                // Create all possible homophone pairs
+                const allHomophones = [];
+                for (let i = 0; i < characterCount; i++) {
+                    for (let j = 0; j < characterCount; j++) {
+                        allHomophones.push(characters[i] + characters[j]);
+                    }
+                    if (progressCallback && i % 100 === 0) {
+                        progressCallback(10 + (i / characterCount) * 30, 
+                            `Generated ${(i * characterCount).toLocaleString()}/${totalPairs.toLocaleString()} pairs`);
+                    }
+                }
+
+                if (progressCallback) progressCallback(40, "Cryptographic shuffling...");
+
+                // Professional key-based shuffling
+                const shuffledHomophones = await this.cryptographicShuffle(allHomophones, encryptionKey);
+
+                if (progressCallback) progressCallback(70, "Building S-Box structure...");
+
+                // Perfect distribution calculation
+                const baseHomophonesPerCell = Math.floor(totalPairs / totalCells);
+                const extraHomophones = totalPairs % totalCells;
+
+                let homophoneIndex = 0;
+                let distributedCount = 0;
+
+                // Build 256×256 S-Box
+                for (let row = 0; row < 256; row++) {
+                    for (let col = 0; col < 256; col++) {
+                        const cellValue = (row << 8) | col;
+                        const homophoneCount = (row * 256 + col) < extraHomophones ? 
+                            baseHomophonesPerCell + 1 : baseHomophonesPerCell;
+
+                        const cellHomophones = shuffledHomophones.slice(
+                            homophoneIndex, 
+                            homophoneIndex + homophoneCount
+                        );
+                        
+                        homophoneIndex += homophoneCount;
+                        distributedCount += homophoneCount;
+
+                        this.sBox.set(cellValue, cellHomophones);
+
+                        // Build reverse mapping for fast decryption
+                        for (const homophone of cellHomophones) {
+                            this.reverseMap.set(homophone, cellValue);
+                        }
+                    }
+
+                    if (progressCallback && row % 16 === 0) {
+                        progressCallback(70 + (row / 256) * 25, 
+                            `Built ${row}/256 rows, ${distributedCount.toLocaleString()}/${totalPairs.toLocaleString()} homophones`);
+                    }
+                }
+
+                // Verification
+                if (distributedCount !== totalPairs) {
+                    throw new Error(`Distribution error: ${distributedCount} distributed vs ${totalPairs} total`);
+                }
+
+                this.initialized = true;
+                this.metrics.initializationTime = performance.now() - startTime;
+
+                return {
+                    charactersUsed: characterCount,
+                    totalHomophones: totalPairs,
+                    homophonesPerCell: baseHomophonesPerCell,
+                    extraHomophones: extraHomophones,
+                    distributedCount: distributedCount,
+                    verification: distributedCount === totalPairs ? "PASS" : "FAIL"
+                };
+            }
+
+            generateCharacterSet(count) {
+                // Professional approach: Use valid Chinese character ranges
+                const ranges = [
+                    [0x4E00, 0x9FFF],   // CJK Unified Ideographs
+                    [0x3400, 0x4DBF],   // CJK Extension A
+                    [0x20000, 0x2A6DF], // CJK Extension B
+                ];
+
+                let characters = '';
+                let generated = 0;
+                let rangeIndex = 0;
+
+                while (generated < count && rangeIndex < ranges.length) {
+                    const [start, end] = ranges[rangeIndex];
+                    for (let codePoint = start; codePoint <= end && generated < count; codePoint++) {
+                        try {
+                            characters += String.fromCodePoint(codePoint);
+                            generated++;
+                        } catch (e) {
+                            continue;
+                        }
+                    }
+                    rangeIndex++;
+                }
+
+                // Fill remaining with mathematical symbols if needed
+                while (generated < count) {
+                    characters += String.fromCodePoint(0x2460 + (generated % 100));
+                    generated++;
+                }
+
+                return characters.substring(0, count);
+            }
+
+            async cryptographicShuffle(array, key) {
+                const result = [...array];
+                const keyBuffer = new TextEncoder().encode(key);
+                
+                // Use Web Crypto API for professional shuffling
+                for (let i = array.length - 1; i > 0; i--) {
+                    // Create deterministic random index based on key and position
+                    const data = new Uint8Array([...keyBuffer, ...new Uint8Array(new Uint32Array([i]).buffer)]);
+                    const hash = await crypto.subtle.digest('SHA-256', data);
+                    const hashArray = new Uint8Array(hash);
                     
-                    const j = new DataView(keyStream.buffer, keyPos).getUint32(0) % (i + 1);
-                    keyPos += 4;
+                    const randomValue = new DataView(hashArray.buffer).getUint32(0);
+                    const j = randomValue % (i + 1);
                     
                     [result[i], result[j]] = [result[j], result[i]];
                 }
-
+                
                 return result;
             }
 
-            async generateKeyStream(key, length) {
-                const encoder = new TextEncoder();
-                let stream = new Uint8Array(length);
-                let pos = 0;
+            encrypt(plaintext, useCryptoRandom = true) {
+                if (!this.initialized) throw new Error("Cipher system not initialized");
 
-                for (let i = 0; pos < length; i++) {
-                    const data = encoder.encode(key + i.toString());
-                    const hash = await crypto.subtle.digest('SHA-512', data);
-                    const hashBytes = new Uint8Array(hash);
-                    
-                    const copyLen = Math.min(hashBytes.length, length - pos);
-                    stream.set(hashBytes.subarray(0, copyLen), pos);
-                    pos += copyLen;
-                }
-
-                return stream;
-            }
-
-            encrypt(plaintext) {
-                if (!this.initialized) throw new Error('S-Box не инициализирован');
-
+                const startTime = performance.now();
                 const encoder = new TextEncoder();
                 const data = encoder.encode(plaintext);
-                let result = '';
+                let ciphertext = '';
 
                 for (let i = 0; i < data.length; i += 2) {
                     const byte1 = data[i];
@@ -404,291 +495,213 @@
 
                     const homophones = this.sBox.get(value);
                     if (!homophones || homophones.length === 0) {
-                        throw new Error(`Нет омофонов для значения 0x${value.toString(16)}`);
+                        throw new Error(`No homophones available for value 0x${value.toString(16)}`);
                     }
 
-                    // Истинно случайный выбор омофона
-                    const randomArray = new Uint32Array(1);
-                    crypto.getRandomValues(randomArray);
-                    const randomIndex = randomArray[0] % homophones.length;
-                    
-                    result += homophones[randomIndex];
+                    // Professional random selection
+                    let randomIndex;
+                    if (useCryptoRandom) {
+                        const cryptoArray = new Uint32Array(1);
+                        crypto.getRandomValues(cryptoArray);
+                        randomIndex = cryptoArray[0] % homophones.length;
+                    } else {
+                        randomIndex = (value + i) % homophones.length; // Deterministic for testing
+                    }
+
+                    ciphertext += homophones[randomIndex];
                 }
 
-                return result;
+                this.metrics.encryptionSpeed = data.length / ((performance.now() - startTime) / 1000);
+                return ciphertext;
             }
 
             decrypt(ciphertext) {
-                if (!this.initialized) throw new Error('S-Box не инициализирован');
-                if (ciphertext.length % 2 !== 0) throw new Error('Длина текста должна быть четной');
+                if (!this.initialized) throw new Error("Cipher system not initialized");
+                if (ciphertext.length % 2 !== 0) throw new Error("Ciphertext length must be even");
 
+                const startTime = performance.now();
                 const byteArray = [];
-                
-                // Прямой поиск в S-Box (без reverseSBox)
+
                 for (let i = 0; i < ciphertext.length; i += 2) {
-                    const pair = ciphertext.substring(i, i + 2);
-                    let foundValue = null;
-                    
-                    // Ищем в какой ячейке S-Box находится этот омофон
-                    for (const [value, homophones] of this.sBox.entries()) {
-                        if (homophones.includes(pair)) {
-                            foundValue = value;
-                            break;
-                        }
-                    }
-                    
-                    if (foundValue === null) {
-                        throw new Error(`Омофон не найден: ${pair} на позиции ${i}`);
+                    const homophone = ciphertext.substring(i, i + 2);
+                    const value = this.reverseMap.get(homophone);
+
+                    if (value === undefined) {
+                        throw new Error(`Unknown homophone sequence at position ${i}: ${homophone}`);
                     }
 
-                    byteArray.push((foundValue >> 8) & 0xFF);
-                    byteArray.push(foundValue & 0xFF);
+                    byteArray.push((value >> 8) & 0xFF);
+                    byteArray.push(value & 0xFF);
                 }
 
-                // Убираем паддинг (только последний нулевой байт)
-                if (byteArray.length > 0 && byteArray[byteArray.length - 1] === 0x00) {
-                    byteArray.pop();
+                // Remove padding carefully
+                let finalLength = byteArray.length;
+                while (finalLength > 0 && byteArray[finalLength - 1] === 0x00) {
+                    finalLength--;
                 }
 
-                const decoder = new TextDecoder();
-                return decoder.decode(new Uint8Array(byteArray));
+                const result = new TextDecoder().decode(new Uint8Array(byteArray.slice(0, finalLength)));
+                this.metrics.decryptionSpeed = ciphertext.length / ((performance.now() - startTime) / 1000);
+                return result;
             }
 
             calculateEntropy(text) {
-                if (!text) return 0;
-                
-                const freqMap = new Map();
+                const frequency = new Map();
                 for (const char of text) {
-                    freqMap.set(char, (freqMap.get(char) || 0) + 1);
+                    frequency.set(char, (frequency.get(char) || 0) + 1);
                 }
 
                 let entropy = 0;
-                const len = text.length;
-                
-                for (const count of freqMap.values()) {
-                    const p = count / len;
-                    entropy -= p * Math.log2(p);
+                const length = text.length;
+                for (const count of frequency.values()) {
+                    const probability = count / length;
+                    entropy -= probability * Math.log2(probability);
                 }
 
+                this.metrics.entropy = entropy;
                 return entropy;
-            }
-
-            // Тест омофонности
-            testHomophonicProperty(value, iterations = 5) {
-                if (!this.initialized) throw new Error('S-Box не инициализирован');
-
-                const homophones = this.sBox.get(value);
-                if (!homophones) return [];
-
-                const results = [];
-                for (let i = 0; i < iterations; i++) {
-                    const randomArray = new Uint32Array(1);
-                    crypto.getRandomValues(randomArray);
-                    const index = randomArray[0] % homophones.length;
-                    results.push(homophones[index]);
-                }
-
-                return results;
-            }
-
-            // Проверка распределения
-            verifyDistribution() {
-                if (!this.initialized) throw new Error('S-Box не инициализирован');
-
-                let totalHomophones = 0;
-                let minHomophones = Infinity;
-                let maxHomophones = 0;
-                let emptyCells = 0;
-
-                for (let value = 0; value < this.totalValues; value++) {
-                    const homophones = this.sBox.get(value) || [];
-                    const count = homophones.length;
-                    
-                    totalHomophones += count;
-                    minHomophones = Math.min(minHomophones, count);
-                    maxHomophones = Math.max(maxHomophones, count);
-                    if (count === 0) emptyCells++;
-                }
-
-                return {
-                    totalHomophones,
-                    minHomophones,
-                    maxHomophones,
-                    emptyCells,
-                    averageHomophones: totalHomophones / this.totalValues
-                };
             }
         }
 
-        // Глобальные переменные
-        let cipher = new ChineseHomophonicCipher();
+        // Global system instance
+        const cipherSystem = new ProfessionalChineseCipher();
 
-        // Элементы интерфейса
-        const elements = {
-            progressFill: document.getElementById('progressFill'),
-            systemStatus: document.getElementById('systemStatus'),
-            totalHomophones: document.getElementById('totalHomophones'),
-            homophonesPerValue: document.getElementById('homophonesPerValue'),
-            entropyValue: document.getElementById('entropyValue'),
-            uniquePairs: document.getElementById('uniquePairs'),
-            ciphertextOutput: document.getElementById('ciphertextOutput'),
-            decryptedOutput: document.getElementById('decryptedOutput'),
-            testResults: document.getElementById('testResults')
-        };
+        // UI Management
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('systemStatus');
+            status.textContent = `● ${message}`;
+            status.className = `status status-${type}`;
+        }
 
-        // Функции интерфейса
-        async function initCipher() {
-            const key = document.getElementById('cryptoKey').value;
-            const charsCount = parseInt(document.getElementById('charactersCount').value);
-            
+        function updateProgress(percent, message = '') {
+            document.getElementById('initProgress').style.width = percent + '%';
+            if (message) updateStatus(message, 'info');
+        }
+
+        async function initializeCipherSystem() {
+            const key = document.getElementById('encryptionKey').value;
+            const characterCount = parseInt(document.getElementById('characterSet').value);
+
             if (!key) {
-                showStatus('Введите ключ шифрования', 'error');
+                updateStatus('Please enter an encryption key', 'error');
                 return;
             }
 
             try {
-                const stats = await cipher.init(key, charsCount, (progress, message) => {
-                    elements.progressFill.style.width = progress + '%';
-                    showStatus(message, 'info');
-                });
-
-                elements.totalHomophones.textContent = stats.totalHomophones.toLocaleString();
-                elements.homophonesPerValue.textContent = `${stats.homophonesPerValue}-${stats.homophonesPerValue + 1}`;
-                elements.uniquePairs.textContent = stats.uniquePairs.toLocaleString();
+                updateStatus('Initializing professional cipher system...', 'info');
                 
-                showStatus(`S-Box готов! ${stats.charactersUsed} иероглифов, ${stats.totalHomophones.toLocaleString()} пар`, 'success');
+                const results = await cipherSystem.initializeSystem(
+                    key, 
+                    characterCount,
+                    updateProgress
+                );
+
+                // Update statistics
+                document.getElementById('totalHomophones').textContent = results.totalHomophones.toLocaleString();
+                document.getElementById('homophonesPerCell').textContent = `${results.homophonesPerCell}-${results.homophonesPerCell + 1}`;
+                document.getElementById('characterCount').textContent = results.charactersUsed;
+
+                updateStatus(`System ready! ${results.totalHomophones.toLocaleString()} homophones distributed across 65,536 S-Box cells`, 'success');
+                
+                updatePerformanceMetrics();
                 
             } catch (error) {
-                showStatus(`Ошибка инициализации: ${error.message}`, 'error');
+                updateStatus(`Initialization failed: ${error.message}`, 'error');
+                console.error('Initialization error:', error);
             }
         }
 
-        async function encryptText() {
-            if (!cipher.initialized) {
-                showStatus('Сначала инициализируйте S-Box', 'error');
+        function encryptMessage() {
+            if (!cipherSystem.initialized) {
+                updateStatus('Please initialize the cipher system first', 'error');
                 return;
             }
 
             const plaintext = document.getElementById('plaintext').value;
+            const useCryptoRandom = document.getElementById('randomnessMode').value === 'crypto';
+
             if (!plaintext) {
-                showStatus('Введите текст для шифрования', 'error');
+                updateStatus('Please enter text to encrypt', 'error');
                 return;
             }
 
             try {
-                showStatus('Шифрование...', 'info');
-                const encrypted = cipher.encrypt(plaintext);
+                updateStatus('Encrypting message...', 'info');
+                const ciphertext = cipherSystem.encrypt(plaintext, useCryptoRandom);
                 
-                elements.ciphertextOutput.textContent = encrypted;
-                document.getElementById('ciphertext').value = encrypted;
+                document.getElementById('ciphertextOutput').textContent = ciphertext;
+                document.getElementById('ciphertextInput').value = ciphertext;
                 
-                const entropy = cipher.calculateEntropy(encrypted);
-                elements.entropyValue.textContent = entropy.toFixed(3);
+                const entropy = cipherSystem.calculateEntropy(ciphertext);
+                updateStatus(`Encryption successful! Entropy: ${entropy.toFixed(2)} bits/character`, 'success');
                 
-                showStatus(`Текст зашифрован (${encrypted.length} иероглифов)`, 'success');
+                updatePerformanceMetrics();
                 
             } catch (error) {
-                showStatus(`Ошибка шифрования: ${error.message}`, 'error');
+                updateStatus(`Encryption failed: ${error.message}`, 'error');
             }
         }
 
-        async function decryptText() {
-            if (!cipher.initialized) {
-                showStatus('Сначала инициализируйте S-Box', 'error');
+        function decryptMessage() {
+            if (!cipherSystem.initialized) {
+                updateStatus('Please initialize the cipher system first', 'error');
                 return;
             }
 
-            const ciphertext = document.getElementById('ciphertext').value;
+            const ciphertext = document.getElementById('ciphertextInput').value;
+
             if (!ciphertext) {
-                showStatus('Введите текст для дешифрования', 'error');
+                updateStatus('Please enter ciphertext to decrypt', 'error');
                 return;
             }
 
             try {
-                showStatus('Дешифрование...', 'info');
-                const decrypted = cipher.decrypt(ciphertext);
+                updateStatus('Decrypting message...', 'info');
+                const plaintext = cipherSystem.decrypt(ciphertext);
                 
-                elements.decryptedOutput.textContent = decrypted;
-                showStatus('Текст успешно дешифрован', 'success');
+                document.getElementById('decryptedOutput').textContent = plaintext;
+                updateStatus('Decryption successful!', 'success');
+                
+                updatePerformanceMetrics();
                 
             } catch (error) {
-                showStatus(`Ошибка дешифрования: ${error.message}`, 'error');
+                updateStatus(`Decryption failed: ${error.message}`, 'error');
             }
         }
 
-        function testDistribution() {
-            if (!cipher.initialized) {
-                showStatus('Сначала инициализируйте S-Box', 'error');
+        function updatePerformanceMetrics() {
+            const metrics = cipherSystem.metrics;
+            document.getElementById('performanceMetrics').textContent = 
+                `Initialization Time: ${metrics.initializationTime.toFixed(0)}ms\n` +
+                `Encryption Speed: ${metrics.encryptionSpeed.toFixed(0)} bytes/sec\n` +
+                `Decryption Speed: ${metrics.decryptionSpeed.toFixed(0)} chars/sec\n` +
+                `Entropy: ${metrics.entropy.toFixed(2)} bits/character`;
+        }
+
+        function runDiagnostics() {
+            if (!cipherSystem.initialized) {
+                updateStatus('System not initialized', 'error');
                 return;
             }
 
+            // Test reversibility
+            const testMessage = "Hello World 123! @#$%";
             try {
-                const stats = cipher.verifyDistribution();
+                const encrypted = cipherSystem.encrypt(testMessage, false); // Deterministic for testing
+                const decrypted = cipherSystem.decrypt(encrypted);
                 
-                elements.testResults.textContent = 
-                    `Проверка распределения:\n\n` +
-                    `Всего омофонов: ${stats.totalHomophones.toLocaleString()}\n` +
-                    `Ячеек S-Box: 65,536\n` +
-                    `Минимально омофонов/ячейку: ${stats.minHomophones}\n` +
-                    `Максимально омофонов/ячейку: ${stats.maxHomophones}\n` +
-                    `Среднее омофонов/ячейку: ${stats.averageHomophones.toFixed(2)}\n` +
-                    `Пустых ячеек: ${stats.emptyCells}\n\n` +
-                    `Статус: ${stats.emptyCells === 0 ? '✓ Все ячейки заполнены' : '✗ Есть пустые ячейки'}`;
-                
-                showStatus('Проверка распределения завершена', 'success');
-                
+                const success = testMessage === decrypted;
+                updateStatus(`Diagnostics: ${success ? 'PASS' : 'FAIL'} - Reversibility test`, 
+                           success ? 'success' : 'error');
+                           
             } catch (error) {
-                showStatus(`Ошибка проверки: ${error.message}`, 'error');
+                updateStatus(`Diagnostics failed: ${error.message}`, 'error');
             }
         }
 
-        async function testHomophonicProperty() {
-            if (!cipher.initialized) {
-                showStatus('Сначала инициализируйте S-Box', 'error');
-                return;
-            }
-
-            try {
-                const testValue = 0x4865; // "He" в ASCII
-                const results = cipher.testHomophonicProperty(testValue, 5);
-                
-                // Проверяем, что все омофоны правильно дешифруются
-                let decryptResults = [];
-                for (const homophone of results) {
-                    const testCipher = homophone + results[0]; // Добавляем еще один омофон для длины
-                    const decrypted = cipher.decrypt(testCipher);
-                    decryptResults.push(decrypted);
-                }
-                
-                elements.testResults.textContent = 
-                    `Тест омофонности для значения 0x${testValue.toString(16)}:\n\n` +
-                    results.map((homophone, i) => `${i + 1}. ${homophone}`).join('\n') +
-                    `\n\nВсе омофоны корректно восстанавливаются в исходное значение.`;
-                
-                showStatus('Тест омофонности выполнен', 'success');
-                
-            } catch (error) {
-                showStatus(`Ошибка теста: ${error.message}`, 'error');
-            }
-        }
-
-        function generateNewKey() {
-            const array = new Uint8Array(32);
-            crypto.getRandomValues(array);
-            const key = Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
-            document.getElementById('cryptoKey').value = key;
-            showStatus('Новый ключ сгенерирован', 'success');
-        }
-
-        function showStatus(message, type) {
-            elements.systemStatus.textContent = message;
-            elements.systemStatus.className = `status ${type}`;
-        }
-
-        // Авто-инициализация
-        window.addEventListener('load', async () => {
-            showStatus('Загрузка системы...', 'info');
-            await initCipher();
+        // Auto-initialize with default settings
+        window.addEventListener('load', () => {
+            updateStatus('Professional Chinese Homophonic Cipher System Ready', 'info');
         });
     </script>
 </body>
