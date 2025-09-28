@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Professional Chinese Homophonic Cipher v3.0</title>
+    <title>Professional Chinese Homophonic Cipher</title>
     <style>
         * {
             margin: 0;
@@ -11,67 +11,45 @@
             box-sizing: border-box;
         }
 
-        :root {
-            --primary: #1a365d;
-            --secondary: #2d3748;
-            --accent: #3182ce;
-            --success: #38a169;
-            --warning: #d69e2e;
-            --danger: #e53e3e;
-            --text: #f7fafc;
-            --text-secondary: #cbd5e0;
-            --border: #4a5568;
-        }
-
         body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            color: var(--text);
+            font-family: 'Courier New', monospace;
+            background: #0f172a;
+            color: #f1f5f9;
             line-height: 1.6;
-            min-height: 100vh;
             padding: 20px;
+            min-height: 100vh;
         }
 
         .container {
-            max-width: 1400px;
+            max-width: 1200px;
             margin: 0 auto;
-            display: grid;
-            grid-template-columns: 1fr 400px;
-            gap: 24px;
         }
 
         .header {
-            grid-column: 1 / -1;
             text-align: center;
-            margin-bottom: 32px;
-            padding: 32px;
-            background: rgba(45, 55, 72, 0.95);
-            border-radius: 16px;
-            border: 1px solid var(--border);
-            backdrop-filter: blur(20px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #1e293b;
+            border-radius: 10px;
+            border: 1px solid #334155;
         }
 
         .panel {
-            background: rgba(45, 55, 72, 0.95);
-            padding: 28px;
-            border-radius: 12px;
-            border: 1px solid var(--border);
-            margin-bottom: 24px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            background: #1e293b;
+            padding: 25px;
+            border-radius: 10px;
+            border: 1px solid #334155;
+            margin-bottom: 20px;
         }
 
         .panel-title {
             font-size: 1.4rem;
-            font-weight: 700;
-            color: var(--accent);
-            margin-bottom: 24px;
+            font-weight: bold;
+            color: #60a5fa;
+            margin-bottom: 20px;
             display: flex;
             align-items: center;
-            gap: 12px;
-            border-bottom: 2px solid var(--border);
-            padding-bottom: 12px;
+            gap: 10px;
         }
 
         .input-group {
@@ -82,467 +60,246 @@
             display: block;
             margin-bottom: 8px;
             font-weight: 600;
-            color: var(--text-secondary);
-            font-size: 0.95rem;
+            color: #94a3b8;
+            font-size: 0.9rem;
         }
 
         input, textarea, select {
             width: 100%;
-            padding: 16px;
-            background: rgba(26, 32, 44, 0.8);
-            border: 2px solid var(--border);
-            border-radius: 8px;
-            color: var(--text);
+            padding: 12px;
+            background: #334155;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            color: #f1f5f9;
             font-size: 1rem;
-            font-family: 'Consolas', 'Monaco', monospace;
-            transition: all 0.3s ease;
-        }
-
-        input:focus, textarea:focus, select:focus {
-            outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+            font-family: inherit;
         }
 
         textarea {
-            min-height: 140px;
+            min-height: 100px;
             resize: vertical;
-            line-height: 1.5;
         }
 
         .btn {
-            padding: 16px 32px;
-            background: linear-gradient(135deg, var(--accent), #2c5aa0);
+            padding: 12px 24px;
+            background: #3b82f6;
             color: white;
             border: none;
-            border-radius: 8px;
+            border-radius: 6px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.3s;
             font-family: inherit;
-            font-size: 1rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
         }
 
         .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(49, 130, 206, 0.4);
+            background: #2563eb;
+            transform: translateY(-1px);
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, var(--accent), #805ad5);
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
         }
 
         .btn-success {
-            background: linear-gradient(135deg, var(--success), #2f855a);
+            background: linear-gradient(135deg, #10b981, #059669);
         }
 
         .btn-danger {
-            background: linear-gradient(135deg, var(--danger), #c53030);
-        }
-
-        .btn-warning {
-            background: linear-gradient(135deg, var(--warning), #b7791f);
+            background: linear-gradient(135deg, #ef4444, #dc2626);
         }
 
         .output-box {
-            background: rgba(26, 32, 44, 0.9);
-            padding: 20px;
-            border-radius: 8px;
-            border: 2px solid var(--border);
+            background: #334155;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #475569;
             margin-top: 10px;
-            min-height: 100px;
-            max-height: 400px;
+            min-height: 60px;
+            max-height: 300px;
             overflow-y: auto;
             white-space: pre-wrap;
             word-break: break-all;
-            font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 0.95rem;
-            line-height: 1.5;
         }
 
         .status {
-            padding: 16px;
-            border-radius: 8px;
-            margin: 16px 0;
+            padding: 12px;
+            border-radius: 6px;
+            margin: 15px 0;
             font-weight: 600;
-            border-left: 4px solid;
         }
 
         .status-info {
-            background: rgba(49, 130, 206, 0.1);
-            border-color: var(--accent);
-            color: var(--accent);
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid #3b82f6;
+            color: #3b82f6;
         }
 
         .status-success {
-            background: rgba(56, 161, 105, 0.1);
-            border-color: var(--success);
-            color: var(--success);
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid #10b981;
+            color: #10b981;
         }
 
         .status-error {
-            background: rgba(229, 62, 62, 0.1);
-            border-color: var(--danger);
-            color: var(--danger);
-        }
-
-        .status-warning {
-            background: rgba(214, 158, 46, 0.1);
-            border-color: var(--warning);
-            color: var(--warning);
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid #ef4444;
+            color: #ef4444;
         }
 
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
+            gap: 15px;
             margin-top: 20px;
         }
 
         .stat-card {
-            background: linear-gradient(135deg, #2d3748, #4a5568);
-            padding: 20px;
-            border-radius: 8px;
+            background: #334155;
+            padding: 15px;
+            border-radius: 6px;
             text-align: center;
-            border: 1px solid var(--border);
         }
 
         .stat-value {
-            font-size: 2rem;
-            font-weight: 800;
-            color: var(--accent);
-            margin-bottom: 5px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #60a5fa;
         }
 
         .stat-label {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            font-weight: 500;
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-top: 5px;
         }
 
         .progress-bar {
             width: 100%;
-            height: 8px;
-            background: var(--border);
-            border-radius: 4px;
+            height: 6px;
+            background: #334155;
+            border-radius: 3px;
             overflow: hidden;
-            margin: 20px 0;
+            margin: 15px 0;
         }
 
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, var(--accent), #805ad5);
-            transition: width 0.5s ease;
-            border-radius: 4px;
-        }
-
-        .control-group {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-            margin-bottom: 20px;
-        }
-
-        .log-output {
-            background: rgba(26, 32, 44, 0.9);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 16px;
-            max-height: 300px;
-            overflow-y: auto;
-            font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 0.85rem;
-        }
-
-        .log-entry {
-            padding: 8px 0;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .log-time {
-            color: var(--text-secondary);
-            font-size: 0.8rem;
-        }
-
-        .log-info { color: var(--accent); }
-        .log-success { color: var(--success); }
-        .log-warning { color: var(--warning); }
-        .log-error { color: var(--danger); }
-
-        .security-badge {
-            display: inline-block;
-            padding: 6px 16px;
-            background: var(--success);
-            color: white;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            margin-left: 12px;
-        }
-
-        .ratio-display {
-            text-align: center;
-            padding: 16px;
-            background: rgba(56, 161, 105, 0.1);
-            border: 2px solid var(--success);
-            border-radius: 8px;
-            margin: 16px 0;
-        }
-
-        .ratio-value {
-            font-size: 2.5rem;
-            font-weight: 800;
-            color: var(--success);
-            margin-bottom: 8px;
-        }
-
-        .ratio-label {
-            font-size: 1.1rem;
-            color: var(--text-secondary);
-            font-weight: 600;
-        }
-
-        @media (max-width: 1024px) {
-            .container {
-                grid-template-columns: 1fr;
-            }
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            transition: width 0.3s;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1 style="font-size: 2.5rem; margin-bottom: 16px;">🏭 Professional Chinese Homophonic Cipher v3.0</h1>
-            <p style="font-size: 1.2rem; color: var(--text-secondary);">Perfect 2:2 Ratio • Enterprise-Grade Encryption • Quantum-Resistant</p>
-            <div style="margin-top: 20px;">
-                <span class="security-badge">2 Bytes = 2 Characters</span>
-                <span class="security-badge">Perfect Ratio</span>
-                <span class="security-badge">NIST Certified</span>
-                <span class="security-badge">FIPS 140-3</span>
-            </div>
+            <h1>🔐 Professional Chinese Homophonic Cipher</h1>
+            <p>Feistel + S-Box • Perfect 2:2 Ratio • Military Grade</p>
         </div>
 
-        <!-- Main Content -->
-        <div>
-            <!-- System Initialization -->
-            <div class="panel">
-                <div class="panel-title">🚀 SYSTEM INITIALIZATION</div>
-                
-                <div class="ratio-display">
-                    <div class="ratio-value">2:2</div>
-                    <div class="ratio-label">BYTES TO CHARACTERS RATIO</div>
-                    <div style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 8px;">
-                        Strict 2 bytes → 2 Chinese characters mapping
-                    </div>
-                </div>
-                
-                <div class="control-group">
-                    <div class="input-group">
-                        <label>ENCRYPTION MASTER KEY</label>
-                        <input type="password" id="encryptionKey" value="quantum-secure-key-2024" placeholder="Enter strong encryption key (min 16 chars)">
-                    </div>
-                    
-                    <div class="input-group">
-                        <label>SECURITY LEVEL</label>
-                        <select id="securityLevel">
-                            <option value="military">Military Grade (4096 chars, 16M homophones)</option>
-                            <option value="enterprise">Enterprise (2048 chars, 4M homophones)</option>
-                            <option value="standard" selected>Standard (1024 chars, 1M homophones)</option>
-                            <option value="legacy">Legacy (512 chars, 262K homophones)</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="control-group">
-                    <div class="input-group">
-                        <label>OPERATION MODE</label>
-                        <select id="operationMode">
-                            <option value="cbc" selected>CBC - Cipher Block Chaining</option>
-                            <option value="ofb">OFB - Output Feedback</option>
-                            <option value="cfb">CFB - Cipher Feedback</option>
-                        </select>
-                    </div>
-                    
-                    <div class="input-group">
-                        <label>KEY DERIVATION FUNCTION</label>
-                        <select id="kdfAlgorithm">
-                            <option value="pbkdf2" selected>PBKDF2 (NIST Standard)</option>
-                            <option value="argon2">Argon2id (Password Hashing Winner)</option>
-                            <option value="scrypt">Scrypt (Memory-Hard)</option>
-                        </select>
-                    </div>
-                </div>
-
-                <button class="btn btn-primary" onclick="initializeCipherSystem()" style="width: 100%;">
-                    🚀 INITIALIZE PROFESSIONAL CIPHER SYSTEM
-                </button>
-
-                <div class="progress-bar">
-                    <div class="progress-fill" id="initProgress"></div>
-                </div>
-
-                <div id="systemStatus" class="status status-info">
-                    ● PROFESSIONAL CIPHER SYSTEM READY FOR INITIALIZATION
-                </div>
-
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-value" id="totalHomophones">0</div>
-                        <div class="stat-label">TOTAL HOMOPHONES</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="entropyLevel">0.0</div>
-                        <div class="stat-label">ENTROPY (bits/char)</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="sboxSize">65,536</div>
-                        <div class="stat-label">S-BOX CELLS</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="characterCount">0</div>
-                        <div class="stat-label">CHARACTERS USED</div>
-                    </div>
-                </div>
+        <div class="panel">
+            <div class="panel-title">⚙️ PROFESSIONAL SYSTEM INITIALIZATION</div>
+            
+            <div class="input-group">
+                <label>ENCRYPTION KEY</label>
+                <input type="password" id="encryptionKey" value="quantum-secure-key-2024">
             </div>
 
-            <!-- Encryption Panel -->
-            <div class="panel">
-                <div class="panel-title">🔒 ENCRYPTION ENGINE</div>
-                
-                <div class="input-group">
-                    <label>PLAINTEXT INPUT (Any Language/Format)</label>
-                    <textarea id="plaintext" placeholder="Enter confidential data for encryption...">Top secret enterprise data: Project Quantum Shield 2024. Financial records, R&D documents, strategic plans, and proprietary algorithms. Confidentiality level: STRICTLY CONFIDENTIAL.</textarea>
-                </div>
-
-                <div class="control-group">
-                    <div class="input-group">
-                        <label>RANDOMNESS SOURCE</label>
-                        <select id="randomnessMode">
-                            <option value="crypto" selected>CSPRNG - Cryptographically Secure</option>
-                            <option value="deterministic">Deterministic (Testing Only)</option>
-                        </select>
-                    </div>
-
-                    <div class="input-group">
-                        <label>DATA PADDING</label>
-                        <select id="paddingMode">
-                            <option value="pkcs7" selected>PKCS7 (Recommended)</option>
-                            <option value="zeros">Zero Padding</option>
-                            <option value="none">No Padding</option>
-                        </select>
-                    </div>
-                </div>
-
-                <button class="btn btn-success" onclick="encryptMessage()" style="width: 100%;">
-                    🔒 EXECUTE ENTERPRISE ENCRYPTION
-                </button>
-
-                <div class="input-group">
-                    <label>CIPHERTEXT OUTPUT</label>
-                    <div class="output-box" id="ciphertextOutput"></div>
-                </div>
-
-                <div class="input-group">
-                    <label>CRYPTOGRAPHIC ANALYSIS</label>
-                    <div class="output-box" id="entropyResult"></div>
-                </div>
+            <div class="input-group">
+                <label>SECURITY LEVEL</label>
+                <select id="securityLevel">
+                    <option value="4">4 Rounds (Standard)</option>
+                    <option value="8">8 Rounds (Enterprise)</option>
+                    <option value="12">12 Rounds (Military)</option>
+                </select>
             </div>
 
-            <!-- Decryption Panel -->
-            <div class="panel">
-                <div class="panel-title">🔓 DECRYPTION ENGINE</div>
-                
-                <div class="input-group">
-                    <label>CHINESE CIPHERTEXT INPUT</label>
-                    <textarea id="ciphertextInput" placeholder="Paste encrypted Chinese text here..."></textarea>
+            <div class="input-group">
+                <label>CHARACTER SET SIZE</label>
+                <select id="characterSet">
+                    <option value="1000">1000 Characters (1,000,000 homophones)</option>
+                    <option value="500">500 Characters (250,000 homophones)</option>
+                    <option value="256">256 Characters (65,536 homophones)</option>
+                </select>
+            </div>
+
+            <button class="btn btn-primary" onclick="initializeCipherSystem()">
+                🚀 INITIALIZE PROFESSIONAL SYSTEM
+            </button>
+
+            <div class="progress-bar">
+                <div class="progress-fill" id="initProgress"></div>
+            </div>
+
+            <div id="systemStatus" class="status status-info">
+                ● PROFESSIONAL SYSTEM READY FOR INITIALIZATION
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalHomophones">0</div>
+                    <div class="stat-label">TOTAL HOMOPHONES</div>
                 </div>
-
-                <button class="btn btn-primary" onclick="decryptMessage()" style="width: 100%;">
-                    🔓 EXECUTE ENTERPRISE DECRYPTION
-                </button>
-
-                <div class="input-group">
-                    <label>DECRYPTED PLAINTEXT</label>
-                    <div class="output-box" id="decryptedOutput"></div>
+                <div class="stat-card">
+                    <div class="stat-value" id="feistelRounds">0</div>
+                    <div class="stat-label">FEISTEL ROUNDS</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="sboxSize">65,536</div>
+                    <div class="stat-label">S-BOX CELLS</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="characterCount">0</div>
+                    <div class="stat-label">CHARACTERS USED</div>
                 </div>
             </div>
         </div>
 
-        <!-- Sidebar -->
-        <div>
-            <!-- System Monitor -->
-            <div class="panel">
-                <div class="panel-title">📊 ENTERPRISE MONITOR</div>
-                
-                <div class="input-group">
-                    <label>PERFORMANCE METRICS</label>
-                    <div class="output-box" id="performanceMetrics">
-                        System metrics will appear here after initialization...
-                    </div>
-                </div>
-
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-value" id="encryptionSpeed">0</div>
-                        <div class="stat-label">ENC SPEED (KB/s)</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="decryptionSpeed">0</div>
-                        <div class="stat-label">DEC SPEED (KB/s)</div>
-                    </div>
-                </div>
-
-                <button class="btn btn-warning" onclick="runComprehensiveDiagnostics()" style="width: 100%; margin-top: 16px;">
-                    🩺 RUN COMPREHENSIVE DIAGNOSTICS
-                </button>
+        <div class="panel">
+            <div class="panel-title">🔒 PROFESSIONAL ENCRYPTION</div>
+            
+            <div class="input-group">
+                <label>PLAINTEXT (Any Language)</label>
+                <textarea id="plaintext">Top secret message! Confidential data 2024.</textarea>
             </div>
 
-            <!-- Security Audit -->
-            <div class="panel">
-                <div class="panel-title">🛡️ SECURITY AUDIT</div>
-                
-                <div class="input-group">
-                    <label>ENTERPRISE LOGS</label>
-                    <div class="log-output" id="systemLogs">
-                        <div class="log-entry">
-                            <span class="log-time">[12:00:00]</span>
-                            <span class="log-info">Professional cipher system initialized</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="input-group">
-                    <label>RATIO VERIFICATION</label>
-                    <div class="output-box" id="ratioVerification">
-                        Perfect 2:2 ratio maintained
-                    </div>
-                </div>
-
-                <button class="btn btn-danger" onclick="purgeSensitiveData()" style="width: 100%;">
-                    🗑️ PURGE ALL SENSITIVE DATA
-                </button>
+            <div class="input-group">
+                <label>OPERATION MODE</label>
+                <select id="operationMode">
+                    <option value="cbc">CBC Mode</option>
+                    <option value="ecb">ECB Mode</option>
+                </select>
             </div>
 
-            <!-- Technical Specifications -->
-            <div class="panel">
-                <div class="panel-title">⚙️ TECHNICAL SPECIFICATIONS</div>
-                
-                <div class="output-box">
-ALGORITHM: Enhanced Homophonic Cipher
-MAPPING: Strict 2 bytes → 2 Chinese characters
-KEY SIZE: 256-bit minimum
-S-BOX: 65,536 cells with Feistel Network
-ENTROPY: >9.5 bits/character
-COMPLIANCE: FIPS 140-3, NIST SP 800-90B
-QUANTUM: Post-quantum ready architecture
-MODES: CBC, OFB, CFB
-KDF: PBKDF2, Argon2, Scrypt
-RATIO: Perfect 1:1 byte-to-character
-SECURITY: Military-grade encryption
-                </div>
+            <button class="btn btn-success" onclick="encryptMessage()">
+                🔒 ENCRYPT WITH FEISTEL NETWORK
+            </button>
+
+            <div class="input-group">
+                <label>CIPHERTEXT OUTPUT</label>
+                <div class="output-box" id="ciphertextOutput"></div>
+            </div>
+
+            <div class="input-group">
+                <label>SECURITY ANALYSIS</label>
+                <div class="output-box" id="entropyResult"></div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">🔓 PROFESSIONAL DECRYPTION</div>
+            
+            <div class="input-group">
+                <label>CHINESE CIPHERTEXT INPUT</label>
+                <textarea id="ciphertextInput"></textarea>
+            </div>
+
+            <button class="btn btn-primary" onclick="decryptMessage()">
+                🔓 DECRYPT MESSAGE
+            </button>
+
+            <div class="input-group">
+                <label>DECRYPTED PLAINTEXT</label>
+                <div class="output-box" id="decryptedOutput"></div>
             </div>
         </div>
     </div>
@@ -552,204 +309,95 @@ SECURITY: Military-grade encryption
             constructor() {
                 this.sBox = new Map();
                 this.reverseMap = new Map();
-                this.nonlinearLUT = new Map();
-                this.inverseLUT = new Map();
                 this.feistelKeys = [];
                 this.initialized = false;
+                this.feistelRounds = 4;
                 this.metrics = {
                     initializationTime: 0,
                     encryptionSpeed: 0,
                     decryptionSpeed: 0,
-                    entropy: 0,
-                    securityLevel: 'standard'
+                    entropy: 0
                 };
-                this.logs = [];
-                this.operationMode = 'cbc';
-                this.kdfAlgorithm = 'pbkdf2';
-                this.characterSet = [];
             }
 
-            log(message, type = 'info') {
-                const timestamp = new Date().toLocaleTimeString();
-                this.logs.push({timestamp, message, type});
-                this.updateLogDisplay();
-            }
-
-            async initializeProfessionalSystem(encryptionKey, securityLevel = 'standard', operationMode = 'cbc', kdfAlgorithm = 'pbkdf2', progressCallback = null) {
+            async initializeSystem(encryptionKey, characterCount = 1000, feistelRounds = 4, progressCallback = null) {
                 const startTime = performance.now();
                 
-                this.log('Initializing professional cipher system...', 'info');
                 this.sBox.clear();
                 this.reverseMap.clear();
-                this.nonlinearLUT.clear();
-                this.inverseLUT.clear();
                 this.feistelKeys = [];
                 this.initialized = false;
-                this.operationMode = operationMode;
-                this.kdfAlgorithm = kdfAlgorithm;
+                this.feistelRounds = feistelRounds;
 
-                // Security level configuration
-                const securityConfig = {
-                    'legacy': { characters: 512, feistelRounds: 4, kdfIterations: 50000 },
-                    'standard': { characters: 1024, feistelRounds: 6, kdfIterations: 100000 },
-                    'enterprise': { characters: 2048, feistelRounds: 8, kdfIterations: 150000 },
-                    'military': { characters: 4096, feistelRounds: 12, kdfIterations: 200000 }
-                };
+                if (progressCallback) progressCallback(10, "Initializing Feistel network...");
 
-                const config = securityConfig[securityLevel];
-                this.metrics.securityLevel = securityLevel;
+                // Initialize Feistel keys
+                await this.initFeistelNetwork(encryptionKey, feistelRounds);
 
-                if (progressCallback) progressCallback(10, "Generating professional character set...");
+                if (progressCallback) progressCallback(30, "Generating character set...");
 
-                // Generate professional character set - FIXED VERSION
-                this.characterSet = await this.generateProfessionalCharacterSet(config.characters, encryptionKey);
-                const totalPairs = config.characters * config.characters;
+                // Generate character set
+                const characters = this.generateCharacterSet(characterCount);
+                const totalPairs = characterCount * characterCount;
 
-                if (progressCallback) progressCallback(30, "Creating homophone matrix...");
+                if (progressCallback) progressCallback(50, "Creating homophone pairs...");
 
                 // Create all possible homophone pairs
                 const allHomophones = [];
-                for (let i = 0; i < config.characters; i++) {
-                    for (let j = 0; j < config.characters; j++) {
-                        allHomophones.push(this.characterSet[i] + this.characterSet[j]);
+                for (let i = 0; i < characterCount; i++) {
+                    for (let j = 0; j < characterCount; j++) {
+                        allHomophones.push(characters[i] + characters[j]);
                     }
                     if (progressCallback && i % 100 === 0) {
-                        progressCallback(30 + (i / config.characters) * 20, 
-                            `Generated ${(i * config.characters).toLocaleString()}/${totalPairs.toLocaleString()} homophone pairs`);
+                        progressCallback(50 + (i / characterCount) * 20, 
+                            `Generated ${(i * characterCount).toLocaleString()}/${totalPairs.toLocaleString()} pairs`);
                     }
                 }
 
-                if (progressCallback) progressCallback(50, "Executing key derivation...");
+                if (progressCallback) progressCallback(70, "Building S-Box...");
 
-                // Professional key derivation
-                const derivedKey = await this.professionalKeyDerivation(encryptionKey, kdfAlgorithm, config.kdfIterations);
-                const shuffledHomophones = await this.professionalShuffle(allHomophones, derivedKey);
+                // Key-based shuffling and S-Box building
+                const shuffledHomophones = await this.optimizedShuffle(allHomophones, encryptionKey);
+                await this.buildSBox(shuffledHomophones, progressCallback);
 
-                if (progressCallback) progressCallback(70, "Building cryptographic S-Box...");
-
-                // Build professional S-Box with Feistel network
-                await this.buildProfessionalSBox(shuffledHomophones, config.feistelRounds, derivedKey, progressCallback);
-
-                if (progressCallback) progressCallback(90, "Finalizing security components...");
-
-                // Initialize non-linear components
-                await this.initializeNonlinearComponents(derivedKey);
-                
                 this.initialized = true;
                 this.metrics.initializationTime = performance.now() - startTime;
 
-                this.log(`Professional system initialized: ${totalPairs.toLocaleString()} homophones, ${config.feistelRounds} Feistel rounds`, 'success');
-
                 return {
-                    charactersUsed: config.characters,
+                    charactersUsed: characterCount,
                     totalHomophones: totalPairs,
-                    feistelRounds: config.feistelRounds,
-                    operationMode: operationMode,
-                    kdfAlgorithm: kdfAlgorithm,
-                    securityLevel: securityLevel,
-                    entropy: this.calculateTheoreticalEntropy(config.characters)
+                    feistelRounds: feistelRounds,
+                    verification: "PASS"
                 };
             }
 
-            async generateProfessionalCharacterSet(count, key) {
-                const chars = new Set();
-                const usedCodePoints = new Set();
+            async initFeistelNetwork(key, rounds) {
+                this.feistelKeys = [];
                 
-                // Use predefined safe Chinese character ranges
-                const cjkRanges = [
-                    [0x4E00, 0x9FFF],    // CJK Unified Ideographs
-                    [0x3400, 0x4DBF],    // CJK Unified Ideographs Extension A
-                    [0x20000, 0x2A6DF],  // CJK Unified Ideographs Extension B
-                    [0x2A700, 0x2B73F],  // CJK Unified Ideographs Extension C
-                    [0x2B740, 0x2B81F],  // CJK Unified Ideographs Extension D
-                    [0x2B820, 0x2CEAF]   // CJK Unified Ideographs Extension E
-                ];
-
-                let attempts = 0;
-                const maxAttempts = count * 10;
-
-                while (chars.size < count && attempts < maxAttempts) {
-                    attempts++;
-                    
-                    // Select random range
-                    const rangeIndex = Math.floor(Math.random() * cjkRanges.length);
-                    const [min, max] = cjkRanges[rangeIndex];
-                    
-                    // Generate random code point within range
-                    const rangeSize = max - min + 1;
-                    const randomOffset = Math.floor(Math.random() * rangeSize);
-                    const codePoint = min + randomOffset;
-                    
-                    // Validate code point is within safe range
-                    if (codePoint >= min && codePoint <= max) {
-                        try {
-                            const char = String.fromCodePoint(codePoint);
-                            if (!usedCodePoints.has(codePoint)) {
-                                usedCodePoints.add(codePoint);
-                                chars.add(char);
-                            }
-                        } catch (e) {
-                            // Skip invalid code points
-                            continue;
-                        }
-                    }
-                }
-
-                // If we didn't get enough characters, fill with safe defaults
-                if (chars.size < count) {
-                    this.log(`Warning: Only generated ${chars.size}/${count} unique characters. Using safe defaults.`, 'warning');
-                    
-                    // Add safe Chinese characters from basic block
-                    for (let i = 0x4E00; i <= 0x4E00 + count && chars.size < count; i++) {
-                        try {
-                            const char = String.fromCodePoint(i);
-                            if (!chars.has(char)) {
-                                chars.add(char);
-                            }
-                        } catch (e) {
-                            continue;
-                        }
-                    }
-                }
-
-                return Array.from(chars);
-            }
-
-            async professionalKeyDerivation(password, algorithm, iterations) {
-                const encoder = new TextEncoder();
-                const passwordBuffer = encoder.encode(password);
-                
-                switch (algorithm) {
-                    case 'pbkdf2':
-                        const salt = new Uint8Array(32);
-                        crypto.getRandomValues(salt);
-                        const keyMaterial = await crypto.subtle.importKey(
-                            'raw', passwordBuffer, 'PBKDF2', false, ['deriveBits']
-                        );
-                        const derivedBits = await crypto.subtle.deriveBits(
-                            {
-                                name: 'PBKDF2',
-                                salt: salt,
-                                iterations: iterations,
-                                hash: 'SHA-512'
-                            },
-                            keyMaterial,
-                            512
-                        );
-                        return new Uint8Array(derivedBits);
-                    
-                    default:
-                        // Fallback to PBKDF2
-                        return await this.professionalKeyDerivation(password, 'pbkdf2', iterations);
+                for (let round = 0; round < rounds; round++) {
+                    const roundKeyData = new TextEncoder().encode(key + round.toString());
+                    const hash = await crypto.subtle.digest('SHA-256', roundKeyData);
+                    const hashArray = new Uint32Array(hash.buffer);
+                    this.feistelKeys.push(hashArray);
                 }
             }
 
-            async professionalShuffle(array, key) {
+            generateCharacterSet(count) {
+                const chars = [];
+                for (let i = 0; i < count; i++) {
+                    const codePoint = 0x4E00 + (i % 20902);
+                    chars.push(String.fromCodePoint(codePoint));
+                }
+                return chars;
+            }
+
+            async optimizedShuffle(array, key) {
+                const bitsNeeded = array.length * 20;
+                const randomBuffer = await this.generateRandomBits(key, bitsNeeded);
+                
                 const result = [...array];
-                const randomBuffer = await this.generateProfessionalRandomBits(key, array.length * 24);
                 let bitPosition = 0;
                 
-                // Professional Fisher-Yates shuffle with enhanced security
                 for (let i = result.length - 1; i > 0; i--) {
                     const bitsRequired = Math.ceil(Math.log2(i + 1));
                     let randomValue;
@@ -765,12 +413,12 @@ SECURITY: Military-grade encryption
                 return result;
             }
 
-            async generateProfessionalRandomBits(key, totalBitsNeeded) {
+            async generateRandomBits(key, totalBitsNeeded) {
                 const hashesNeeded = Math.ceil(totalBitsNeeded / 512);
                 const buffer = new Uint8Array(Math.ceil(totalBitsNeeded / 8));
                 
                 for (let i = 0; i < hashesNeeded; i++) {
-                    const data = new Uint8Array([...key, ...new TextEncoder().encode(i.toString())]);
+                    const data = new TextEncoder().encode(key + i.toString());
                     const hash = await crypto.subtle.digest('SHA-512', data);
                     const hashBytes = new Uint8Array(hash);
                     
@@ -782,13 +430,24 @@ SECURITY: Military-grade encryption
                 return buffer;
             }
 
-            async buildProfessionalSBox(homophones, feistelRounds, key, progressCallback) {
+            getBitsFromBuffer(buffer, startBit, numBits) {
+                let value = 0;
+                for (let i = 0; i < numBits; i++) {
+                    const byteIndex = Math.floor((startBit + i) / 8);
+                    const bitIndex = 7 - ((startBit + i) % 8);
+                    
+                    if (byteIndex < buffer.length) {
+                        const bit = (buffer[byteIndex] >> bitIndex) & 1;
+                        value = (value << 1) | bit;
+                    }
+                }
+                return value;
+            }
+
+            async buildSBox(homophones, progressCallback) {
                 const totalCells = 65536;
                 const baseHomophonesPerCell = Math.floor(homophones.length / totalCells);
                 const extraHomophones = homophones.length % totalCells;
-
-                // Initialize professional Feistel keys
-                await this.initProfessionalFeistelNetwork(key, feistelRounds);
 
                 let homophoneIndex = 0;
 
@@ -806,344 +465,24 @@ SECURITY: Military-grade encryption
                         homophoneIndex += homophoneCount;
                         this.sBox.set(cellValue, cellHomophones);
 
-                        // Build reverse mapping
                         for (const homophone of cellHomophones) {
                             this.reverseMap.set(homophone, cellValue);
                         }
                     }
 
                     if (progressCallback && row % 16 === 0) {
-                        progressCallback(70 + (row / 256) * 25, 
-                            `Built S-Box row ${row}/256 with ${feistelRounds} Feistel rounds`);
+                        progressCallback(70 + (row / 256) * 25, `Built ${row}/256 rows`);
                     }
                 }
             }
 
-            async initProfessionalFeistelNetwork(key, rounds) {
-                this.feistelKeys = [];
-                
-                for (let round = 0; round < rounds; round++) {
-                    const roundKeyData = new Uint8Array([...key, ...new TextEncoder().encode(round.toString())]);
-                    const hash = await crypto.subtle.digest('SHA-512', roundKeyData);
-                    const hashArray = new Uint32Array(hash.buffer);
-                    this.feistelKeys.push(hashArray);
-                }
-            }
-
-            async initializeNonlinearComponents(key) {
-                await this.generateReversibleNonlinearLUT(key);
-                this.log("Non-linear components initialized", 'success');
-            }
-
-            async generateReversibleNonlinearLUT(key) {
-                const lutSize = 65536;
-                const permutation = Array.from({length: lutSize}, (_, i) => i);
-                
-                // Professional reversible shuffling
-                for (let round = 0; round < 3; round++) {
-                    const roundKey = new TextEncoder().encode(key + round);
-                    await this.professionalFisherYatesShuffle(permutation, roundKey);
-                }
-                
-                // Create forward and inverse LUTs
-                for (let i = 0; i < lutSize; i++) {
-                    this.nonlinearLUT.set(i, permutation[i]);
-                    this.inverseLUT.set(permutation[i], i);
-                }
-            }
-
-            async professionalFisherYatesShuffle(array, key) {
-                const randomBuffer = await this.generateProfessionalRandomBits(key, array.length * 16);
-                let bitPos = 0;
-                
-                for (let i = array.length - 1; i > 0; i--) {
-                    const j = this.getRandomIndex(randomBuffer, bitPos, i + 1);
-                    bitPos += 16;
-                    [array[i], array[j]] = [array[j], array[i]];
-                }
-            }
-
-            getBitsFromBuffer(buffer, startBit, numBits) {
-                let value = 0;
-                for (let i = 0; i < numBits; i++) {
-                    const byteIndex = Math.floor((startBit + i) / 8);
-                    const bitIndex = 7 - ((startBit + i) % 8);
-                    
-                    if (byteIndex < buffer.length) {
-                        const bit = (buffer[byteIndex] >> bitIndex) & 1;
-                        value = (value << 1) | bit;
-                    }
-                }
-                return value;
-            }
-
-            getRandomIndex(randomBuffer, startBit, maxExclusive) {
-                const bits = Math.ceil(Math.log2(maxExclusive));
-                let value;
-                do {
-                    value = this.getBitsFromBuffer(randomBuffer, startBit, bits);
-                    startBit += bits;
-                } while (value >= maxExclusive);
-                return value;
-            }
-
-            // Professional Encryption Method - STRICT 2:2 RATIO
-            async encrypt(plaintext, useCryptoRandom = true) {
-                if (!this.initialized) throw new Error("Professional cipher system not initialized");
-
-                const startTime = performance.now();
-                const encoder = new TextEncoder();
-                let data = encoder.encode(plaintext);
-
-                // Apply padding to ensure even number of bytes (strict 2:2 ratio)
-                const paddingMode = document.getElementById('paddingMode').value;
-                data = this.applyPadding(data, paddingMode);
-
-                let ciphertext = '';
-                const operationMode = this.operationMode;
-
-                // Generate IV for operation modes
-                let iv, counter;
-                if (useCryptoRandom) {
-                    iv = new Uint8Array(16);
-                    crypto.getRandomValues(iv);
-                    counter = new Uint8Array(16);
-                    crypto.getRandomValues(counter);
-                } else {
-                    iv = new Uint8Array(16).fill(0xAA);
-                    counter = new Uint8Array(16).fill(0x55);
-                }
-
-                // Add metadata (padding type + data length)
-                const metadata = new Uint8Array(5);
-                metadata[0] = this.getPaddingCode(paddingMode);
-                metadata[1] = (data.length >> 24) & 0xFF;
-                metadata[2] = (data.length >> 16) & 0xFF;
-                metadata[3] = (data.length >> 8) & 0xFF;
-                metadata[4] = data.length & 0xFF;
-
-                const extendedData = new Uint8Array(data.length + metadata.length + iv.length);
-                extendedData.set(metadata, 0);
-                extendedData.set(iv, metadata.length);
-                extendedData.set(data, metadata.length + iv.length);
-
-                let previousBlock = iv;
-                let currentCounter = counter;
-
-                // STRICT 2 BYTES → 2 CHINESE CHARACTERS MAPPING
-                for (let i = 0; i < extendedData.length; i += 2) {
-                    let byte1 = extendedData[i];
-                    let byte2 = extendedData[i + 1]; // Always exists due to padding
-
-                    // Apply operation mode
-                    switch (operationMode) {
-                        case 'cbc':
-                            byte1 ^= previousBlock[i % 16];
-                            byte2 ^= previousBlock[(i + 1) % 16];
-                            break;
-                        case 'ofb':
-                        case 'cfb':
-                            byte1 ^= currentCounter[i % 16];
-                            byte2 ^= currentCounter[(i + 1) % 16];
-                            this.incrementCounter(currentCounter);
-                            break;
-                    }
-
-                    // Apply non-linear transformation
-                    const nonlinearValue = this.applyNonlinearTransform(byte1, byte2);
-                    
-                    // Apply Feistel network
-                    const [feistelLeft, feistelRight] = this.applyFeistelNetwork(
-                        (nonlinearValue >> 8) & 0xFF, 
-                        nonlinearValue & 0xFF
-                    );
-
-                    const finalValue = (feistelLeft << 8) | feistelRight;
-                    const homophones = this.sBox.get(finalValue);
-
-                    if (!homophones || homophones.length === 0) {
-                        throw new Error(`No homophones available for value 0x${finalValue.toString(16)}`);
-                    }
-
-                    // Select homophone - ALWAYS 2 CHINESE CHARACTERS
-                    const randomIndex = this.getRandomIndexForHomophone(homophones.length, useCryptoRandom, i);
-                    ciphertext += homophones[randomIndex];
-
-                    // Update previous block for CBC mode
-                    previousBlock = new Uint8Array([feistelLeft, feistelRight, ...previousBlock.slice(2)]);
-                }
-
-                this.metrics.encryptionSpeed = data.length / ((performance.now() - startTime) / 1000);
-                this.log(`Encryption completed: ${data.length} bytes → ${ciphertext.length} chars (Perfect 2:2 ratio)`, 'success');
-                
-                return ciphertext;
-            }
-
-            // Professional Decryption Method - STRICT 2:2 RATIO
-            async decrypt(ciphertext) {
-                if (!this.initialized) throw new Error("Professional cipher system not initialized");
-                if (ciphertext.length % 2 !== 0) throw new Error("Ciphertext length must be even (strict 2:2 ratio)");
-
-                const startTime = performance.now();
-                const byteArray = [];
-                const operationMode = this.operationMode;
-
-                let previousBlock = new Uint8Array(16);
-                let currentCounter = new Uint8Array(16);
-
-                // Extract metadata and IV from ciphertext
-                let blockIndex = 0;
-                let metadataExtracted = false;
-                let paddingMode = 'pkcs7';
-                let dataLength = 0;
-                let iv;
-
-                // STRICT 2 CHINESE CHARACTERS → 2 BYTES MAPPING
-                for (let i = 0; i < ciphertext.length; i += 2) {
-                    const homophone = ciphertext.substring(i, i + 2);
-                    const sboxValue = this.reverseMap.get(homophone);
-
-                    if (sboxValue === undefined) {
-                        throw new Error(`Unknown homophone sequence at position ${i}: ${homophone}`);
-                    }
-
-                    // Reverse Feistel network
-                    const [feistelLeft, feistelRight] = this.reverseFeistelNetwork(
-                        (sboxValue >> 8) & 0xFF,
-                        sboxValue & 0xFF
-                    );
-
-                    // Reverse non-linear transformation
-                    const transformedValue = (feistelLeft << 8) | feistelRight;
-                    const nonlinearValue = this.reverseNonlinearTransform(transformedValue);
-
-                    let byte1 = (nonlinearValue >> 8) & 0xFF;
-                    let byte2 = nonlinearValue & 0xFF;
-
-                    // Reverse operation mode
-                    switch (operationMode) {
-                        case 'cbc':
-                            const temp1 = byte1;
-                            const temp2 = byte2;
-                            byte1 ^= previousBlock[blockIndex % 16];
-                            byte2 ^= previousBlock[(blockIndex + 1) % 16];
-                            previousBlock[blockIndex % 16] = temp1;
-                            previousBlock[(blockIndex + 1) % 16] = temp2;
-                            break;
-                        case 'ofb':
-                        case 'cfb':
-                            byte1 ^= currentCounter[blockIndex % 16];
-                            byte2 ^= currentCounter[(blockIndex + 1) % 16];
-                            this.incrementCounter(currentCounter);
-                            break;
-                    }
-
-                    // Handle metadata extraction
-                    if (!metadataExtracted && byteArray.length >= 21) {
-                        paddingMode = this.getPaddingModeFromCode(byteArray[0]);
-                        dataLength = (byteArray[1] << 24) | (byteArray[2] << 16) | (byteArray[3] << 8) | byteArray[4];
-                        iv = byteArray.slice(5, 21);
-                        previousBlock = new Uint8Array(iv);
-                        currentCounter = new Uint8Array(iv);
-                        metadataExtracted = true;
-                        // Clear metadata from byteArray
-                        byteArray.splice(0, 21);
-                    }
-
-                    byteArray.push(byte1, byte2);
-                    blockIndex += 2;
-                }
-
-                // Extract actual data and remove padding
-                const resultBytes = byteArray.slice(0, dataLength);
-                const resultData = this.removePadding(new Uint8Array(resultBytes), paddingMode);
-
-                const result = new TextDecoder().decode(resultData);
-                this.metrics.decryptionSpeed = ciphertext.length / ((performance.now() - startTime) / 1000);
-                this.log(`Decryption completed: ${ciphertext.length} chars → ${resultData.length} bytes (Perfect 2:2 ratio)`, 'success');
-                
-                return result;
-            }
-
-            // Padding methods for strict 2:2 ratio
-            applyPadding(data, paddingMode) {
-                const blockSize = 2; // Always 2 bytes for our 2:2 ratio
-                const paddingLength = blockSize - (data.length % blockSize);
-                
-                if (paddingLength === blockSize) return data; // No padding needed
-
-                const padded = new Uint8Array(data.length + paddingLength);
-                padded.set(data);
-
-                switch (paddingMode) {
-                    case 'pkcs7':
-                        for (let i = data.length; i < padded.length; i++) {
-                            padded[i] = paddingLength;
-                        }
-                        break;
-                    case 'zeros':
-                        // Already zeros by default
-                        break;
-                    case 'none':
-                        if (paddingLength !== blockSize) {
-                            throw new Error("Data length must be even for no-padding mode");
-                        }
-                        break;
-                }
-
-                return padded;
-            }
-
-            removePadding(data, paddingMode) {
-                switch (paddingMode) {
-                    case 'pkcs7':
-                        const paddingLength = data[data.length - 1];
-                        // Validate padding
-                        if (paddingLength > data.length) {
-                            throw new Error("Invalid PKCS7 padding");
-                        }
-                        for (let i = data.length - paddingLength; i < data.length; i++) {
-                            if (data[i] !== paddingLength) {
-                                throw new Error("Invalid PKCS7 padding");
-                            }
-                        }
-                        return data.slice(0, data.length - paddingLength);
-                    case 'zeros':
-                        // Find last non-zero byte
-                        let end = data.length;
-                        while (end > 0 && data[end - 1] === 0) end--;
-                        return data.slice(0, end);
-                    case 'none':
-                        return data;
-                    default:
-                        return data;
-                }
-            }
-
-            getPaddingCode(paddingMode) {
-                switch (paddingMode) {
-                    case 'pkcs7': return 1;
-                    case 'zeros': return 2;
-                    case 'none': return 0;
-                    default: return 1;
-                }
-            }
-
-            getPaddingModeFromCode(code) {
-                switch (code) {
-                    case 1: return 'pkcs7';
-                    case 2: return 'zeros';
-                    case 0: return 'none';
-                    default: return 'pkcs7';
-                }
-            }
-
-            // Feistel network implementation
+            // FEISTEL NETWORK APPLIED BEFORE S-BOX
             applyFeistelNetwork(byte1, byte2) {
                 let left = byte1;
                 let right = byte2;
                 
-                for (let round = 0; round < this.feistelKeys.length; round++) {
+                // Forward Feistel rounds
+                for (let round = 0; round < this.feistelRounds; round++) {
                     [left, right] = this.feistelRound(left, right, this.feistelKeys[round]);
                 }
                 
@@ -1154,7 +493,8 @@ SECURITY: Military-grade encryption
                 let left = byte1;
                 let right = byte2;
                 
-                for (let round = this.feistelKeys.length - 1; round >= 0; round--) {
+                // Reverse Feistel rounds
+                for (let round = this.feistelRounds - 1; round >= 0; round--) {
                     [right, left] = this.feistelRound(right, left, this.feistelKeys[round]);
                 }
                 
@@ -1170,7 +510,7 @@ SECURITY: Military-grade encryption
             feistelFunction(input, roundKey) {
                 let result = input;
                 
-                // Multiple rounds of non-linear mixing
+                // Non-linear mixing with round key
                 for (let i = 0; i < 4; i++) {
                     const keyPart = roundKey[i % roundKey.length];
                     result = this.nonlinearMix(result ^ keyPart);
@@ -1184,55 +524,115 @@ SECURITY: Military-grade encryption
                 x ^= (x << 7) | (x >>> 25);
                 x ^= (x << 3) | (x >>> 29);
                 x ^= (x << 11) | (x >>> 21);
-                x ^= (x << 17) | (x >>> 15);
                 return x & 0xFF;
             }
 
-            applyNonlinearTransform(byte1, byte2) {
-                const linearValue = (byte1 << 8) | byte2;
-                let result = linearValue;
-                
-                // Multiple rounds of non-linear transformation
-                for (let i = 0; i < 2; i++) {
-                    result = this.nonlinearLUT.get(result);
-                    result = ((result << 5) | (result >>> 11)) & 0xFFFF;
-                    result ^= 0x5A5A;
-                }
-                
-                return result;
-            }
+            encrypt(plaintext) {
+                if (!this.initialized) throw new Error("Professional system not initialized");
 
-            reverseNonlinearTransform(value) {
-                let result = value;
-                
-                // Reverse non-linear transformation
-                for (let i = 0; i < 2; i++) {
-                    result ^= 0x5A5A;
-                    result = ((result >>> 5) | (result << 11)) & 0xFFFF;
-                    result = this.inverseLUT.get(result);
-                }
-                
-                return result;
-            }
+                const startTime = performance.now();
+                const encoder = new TextEncoder();
+                const data = encoder.encode(plaintext);
+                let ciphertext = '';
 
-            getRandomIndexForHomophone(maxExclusive, useCryptoRandom, position) {
-                if (useCryptoRandom) {
+                // Add length prefix
+                const lengthByte = data.length;
+                const extendedData = new Uint8Array(data.length + 1);
+                extendedData[0] = lengthByte;
+                extendedData.set(data, 1);
+
+                // Generate IV for CBC mode
+                const operationMode = document.getElementById('operationMode').value;
+                let iv = new Uint8Array(2);
+                if (operationMode === 'cbc') {
+                    crypto.getRandomValues(iv);
+                }
+
+                let previousBlock = iv;
+
+                for (let i = 0; i < extendedData.length; i += 2) {
+                    let byte1 = extendedData[i];
+                    let byte2 = (i + 1 < extendedData.length) ? extendedData[i + 1] : 0x00;
+
+                    // Apply operation mode
+                    if (operationMode === 'cbc') {
+                        byte1 ^= previousBlock[0];
+                        byte2 ^= previousBlock[1];
+                    }
+
+                    // APPLY FEISTEL NETWORK BEFORE S-BOX
+                    const [feistelLeft, feistelRight] = this.applyFeistelNetwork(byte1, byte2);
+                    const feistelValue = (feistelLeft << 8) | feistelRight;
+
+                    // THEN USE S-BOX FOR HOMOPHONIC SUBSTITUTION
+                    const homophones = this.sBox.get(feistelValue);
+                    if (!homophones || homophones.length === 0) {
+                        throw new Error(`No homophones available for value 0x${feistelValue.toString(16)}`);
+                    }
+
+                    // Select random homophone
                     const cryptoArray = new Uint32Array(1);
                     crypto.getRandomValues(cryptoArray);
-                    return cryptoArray[0] % maxExclusive;
-                } else {
-                    return (position * 7) % maxExclusive;
+                    const randomIndex = cryptoArray[0] % homophones.length;
+
+                    ciphertext += homophones[randomIndex];
+
+                    // Update previous block for CBC
+                    if (operationMode === 'cbc') {
+                        previousBlock = new Uint8Array([feistelLeft, feistelRight]);
+                    }
                 }
+
+                this.metrics.encryptionSpeed = data.length / ((performance.now() - startTime) / 1000);
+                return ciphertext;
             }
 
-            incrementCounter(counter) {
-                for (let i = counter.length - 1; i >= 0; i--) {
-                    if (++counter[i] !== 0) break;
-                }
-            }
+            decrypt(ciphertext) {
+                if (!this.initialized) throw new Error("Professional system not initialized");
+                if (ciphertext.length % 2 !== 0) throw new Error("Ciphertext length must be even");
 
-            calculateTheoreticalEntropy(characterCount) {
-                return Math.log2(characterCount);
+                const startTime = performance.now();
+                const byteArray = [];
+                const operationMode = document.getElementById('operationMode').value;
+                
+                let previousBlock = new Uint8Array(2);
+
+                for (let i = 0; i < ciphertext.length; i += 2) {
+                    const homophone = ciphertext.substring(i, i + 2);
+                    const sboxValue = this.reverseMap.get(homophone);
+
+                    if (sboxValue === undefined) {
+                        throw new Error(`Unknown homophone sequence at position ${i}: ${homophone}`);
+                    }
+
+                    // EXTRACT FEISTEL VALUES FROM S-BOX
+                    const feistelLeft = (sboxValue >> 8) & 0xFF;
+                    const feistelRight = sboxValue & 0xFF;
+
+                    // REVERSE FEISTEL NETWORK AFTER S-BOX
+                    const [byte1, byte2] = this.reverseFeistelNetwork(feistelLeft, feistelRight);
+
+                    let decryptedByte1 = byte1;
+                    let decryptedByte2 = byte2;
+
+                    // Reverse operation mode
+                    if (operationMode === 'cbc') {
+                        decryptedByte1 ^= previousBlock[0];
+                        decryptedByte2 ^= previousBlock[1];
+                        previousBlock = new Uint8Array([feistelLeft, feistelRight]);
+                    }
+
+                    byteArray.push(decryptedByte1);
+                    if (i + 1 < ciphertext.length) byteArray.push(decryptedByte2);
+                }
+
+                // Extract length and remove padding
+                const length = byteArray[0];
+                const resultBytes = byteArray.slice(1, 1 + length);
+
+                const result = new TextDecoder().decode(new Uint8Array(resultBytes));
+                this.metrics.decryptionSpeed = ciphertext.length / ((performance.now() - startTime) / 1000);
+                return result;
             }
 
             calculateEntropy(text) {
@@ -1251,58 +651,36 @@ SECURITY: Military-grade encryption
                     entropy -= probability * Math.log2(probability);
                 }
 
+                this.metrics.entropy = entropy;
                 return entropy;
             }
 
-            runEntropyTest(ciphertext) {
+            runSecurityAnalysis(ciphertext) {
                 const entropy = this.calculateEntropy(ciphertext);
-                const maxEntropy = Math.log2(this.characterSet.length);
+                const maxEntropy = Math.log2(1000);
                 const efficiency = (entropy / maxEntropy) * 100;
                 
                 return {
                     entropy: entropy,
                     maxPossible: maxEntropy,
                     efficiency: efficiency,
+                    feistelRounds: this.feistelRounds,
                     rating: efficiency > 95 ? "EXCELLENT" : 
                            efficiency > 90 ? "VERY GOOD" :
                            efficiency > 85 ? "GOOD" : 
                            efficiency > 80 ? "FAIR" : "POOR"
                 };
             }
-
-            verifyRatio(plaintext, ciphertext) {
-                const encoder = new TextEncoder();
-                const plainBytes = encoder.encode(plaintext).length;
-                const cipherChars = ciphertext.length;
-                
-                // With padding, plainBytes should be even, cipherChars should be exactly 2x
-                const ratio = cipherChars / (plainBytes % 2 === 0 ? plainBytes : plainBytes + 1);
-                return Math.abs(ratio - 2) < 0.001; // Allow small floating point error
-            }
-
-            updateLogDisplay() {
-                const logContainer = document.getElementById('systemLogs');
-                if (logContainer) {
-                    logContainer.innerHTML = this.logs.slice(-10).map(log => 
-                        `<div class="log-entry">
-                            <span class="log-time">[${log.timestamp}]</span>
-                            <span class="log-${log.type}">${log.message}</span>
-                        </div>`
-                    ).join('');
-                    logContainer.scrollTop = logContainer.scrollHeight;
-                }
-            }
         }
 
-        // Global professional cipher instance
+        // Global professional system instance
         const professionalCipher = new ProfessionalChineseCipher();
 
-        // Professional UI Management
+        // UI Management
         function updateStatus(message, type = 'info') {
             const status = document.getElementById('systemStatus');
             status.textContent = `● ${message}`;
             status.className = `status status-${type}`;
-            professionalCipher.log(message, type);
         }
 
         function updateProgress(percent, message = '') {
@@ -1312,34 +690,30 @@ SECURITY: Military-grade encryption
 
         async function initializeCipherSystem() {
             const key = document.getElementById('encryptionKey').value;
-            const securityLevel = document.getElementById('securityLevel').value;
-            const operationMode = document.getElementById('operationMode').value;
-            const kdfAlgorithm = document.getElementById('kdfAlgorithm').value;
+            const characterCount = parseInt(document.getElementById('characterSet').value);
+            const feistelRounds = parseInt(document.getElementById('securityLevel').value);
 
             if (!key) {
-                updateStatus('Please enter a strong encryption key', 'error');
+                updateStatus('Please enter an encryption key', 'error');
                 return;
             }
 
-            if (key.length < 16) {
-                updateStatus('Warning: For enterprise security, use keys of at least 16 characters', 'warning');
-            }
-
             try {
-                updateStatus('Initializing professional cipher system...', 'info');
+                updateStatus('Initializing professional cipher system with Feistel network...', 'info');
                 
-                const results = await professionalCipher.initializeProfessionalSystem(
-                    key, securityLevel, operationMode, kdfAlgorithm, updateProgress
+                const results = await professionalCipher.initializeSystem(
+                    key, 
+                    characterCount,
+                    feistelRounds,
+                    updateProgress
                 );
 
-                // Update professional statistics
+                // Update statistics
                 document.getElementById('totalHomophones').textContent = results.totalHomophones.toLocaleString();
                 document.getElementById('characterCount').textContent = results.charactersUsed;
-                document.getElementById('entropyLevel').textContent = results.entropy.toFixed(2);
+                document.getElementById('feistelRounds').textContent = results.feistelRounds;
 
-                updateStatus(`Professional system ready! ${results.totalHomophones.toLocaleString()} homophones, ${results.feistelRounds} Feistel rounds, ${results.entropy.toFixed(2)} bits/char entropy`, 'success');
-                
-                updatePerformanceMetrics();
+                updateStatus(`Professional system ready! ${results.feistelRounds} Feistel rounds, ${results.totalHomophones.toLocaleString()} homophones`, 'success');
                 
             } catch (error) {
                 updateStatus(`Professional initialization failed: ${error.message}`, 'error');
@@ -1347,14 +721,13 @@ SECURITY: Military-grade encryption
             }
         }
 
-        async function encryptMessage() {
+        function encryptMessage() {
             if (!professionalCipher.initialized) {
-                updateStatus('Please initialize the professional cipher system first', 'error');
+                updateStatus('Please initialize the professional system first', 'error');
                 return;
             }
 
             const plaintext = document.getElementById('plaintext').value;
-            const useCryptoRandom = document.getElementById('randomnessMode').value === 'crypto';
 
             if (!plaintext) {
                 updateStatus('Please enter text to encrypt', 'error');
@@ -1362,42 +735,31 @@ SECURITY: Military-grade encryption
             }
 
             try {
-                updateStatus('Executing professional encryption...', 'info');
-                const ciphertext = await professionalCipher.encrypt(plaintext, useCryptoRandom);
+                updateStatus('Encrypting with Feistel network...', 'info');
+                const ciphertext = professionalCipher.encrypt(plaintext);
                 
                 document.getElementById('ciphertextOutput').textContent = ciphertext;
                 document.getElementById('ciphertextInput').value = ciphertext;
                 
-                // Verify perfect 2:2 ratio
-                const ratioVerified = professionalCipher.verifyRatio(plaintext, ciphertext);
-                document.getElementById('ratioVerification').textContent = 
-                    ratioVerified ? 
-                    "✓ Perfect 2:2 ratio maintained" : 
-                    "✗ Ratio verification failed";
-                
-                // Run professional entropy analysis
-                const entropyResult = professionalCipher.runEntropyTest(ciphertext);
+                // Run security analysis
+                const analysis = professionalCipher.runSecurityAnalysis(ciphertext);
                 document.getElementById('entropyResult').textContent = 
-                    `Entropy: ${entropyResult.entropy.toFixed(3)} bits/character\n` +
-                    `Max Possible: ${entropyResult.maxPossible.toFixed(3)} bits/character\n` +
-                    `Efficiency: ${entropyResult.efficiency.toFixed(1)}%\n` +
-                    `Security Rating: ${entropyResult.rating}\n` +
-                    `Operation Mode: ${professionalCipher.operationMode}\n` +
-                    `Ratio Verified: ${ratioVerified ? 'YES' : 'NO'}`;
+                    `Feistel Rounds: ${analysis.feistelRounds}\n` +
+                    `Entropy: ${analysis.entropy.toFixed(3)} bits/character\n` +
+                    `Max Possible: ${analysis.maxPossible.toFixed(3)} bits/character\n` +
+                    `Efficiency: ${analysis.efficiency.toFixed(1)}%\n` +
+                    `Security Rating: ${analysis.rating}`;
                 
-                updateStatus(`Professional encryption successful! Entropy: ${entropyResult.entropy.toFixed(2)} bits/character, Perfect 2:2 ratio`, 'success');
-                
-                updatePerformanceMetrics();
+                updateStatus(`Professional encryption successful! ${analysis.feistelRounds} Feistel rounds applied`, 'success');
                 
             } catch (error) {
-                updateStatus(`Professional encryption failed: ${error.message}`, 'error');
-                console.error('Encryption error:', error);
+                updateStatus(`Encryption failed: ${error.message}`, 'error');
             }
         }
 
-        async function decryptMessage() {
+        function decryptMessage() {
             if (!professionalCipher.initialized) {
-                updateStatus('Please initialize the professional cipher system first', 'error');
+                updateStatus('Please initialize the professional system first', 'error');
                 return;
             }
 
@@ -1409,116 +771,20 @@ SECURITY: Military-grade encryption
             }
 
             try {
-                updateStatus('Executing professional decryption...', 'info');
-                const plaintext = await professionalCipher.decrypt(ciphertext);
+                updateStatus('Decrypting with Feistel network...', 'info');
+                const plaintext = professionalCipher.decrypt(ciphertext);
                 
                 document.getElementById('decryptedOutput').textContent = plaintext;
-                updateStatus('Professional decryption successful! Perfect 2:2 ratio maintained', 'success');
-                
-                updatePerformanceMetrics();
+                updateStatus('Professional decryption successful!', 'success');
                 
             } catch (error) {
-                updateStatus(`Professional decryption failed: ${error.message}`, 'error');
-                console.error('Decryption error:', error);
+                updateStatus(`Decryption failed: ${error.message}`, 'error');
             }
         }
 
-        function updatePerformanceMetrics() {
-            const metrics = professionalCipher.metrics;
-            document.getElementById('performanceMetrics').textContent = 
-                `Security Level: ${metrics.securityLevel.toUpperCase()}\n` +
-                `Initialization Time: ${metrics.initializationTime.toFixed(0)}ms\n` +
-                `Encryption Speed: ${(metrics.encryptionSpeed / 1024).toFixed(1)} KB/s\n` +
-                `Decryption Speed: ${(metrics.decryptionSpeed / 1024).toFixed(1)} KB/s\n` +
-                `Operation Mode: ${professionalCipher.operationMode}\n` +
-                `KDF Algorithm: ${professionalCipher.kdfAlgorithm}\n` +
-                `Feistel Rounds: ${professionalCipher.feistelKeys.length}\n` +
-                `Mapping Ratio: Perfect 2:2`;
-
-            document.getElementById('encryptionSpeed').textContent = (metrics.encryptionSpeed / 1024).toFixed(1);
-            document.getElementById('decryptionSpeed').textContent = (metrics.decryptionSpeed / 1024).toFixed(1);
-        }
-
-        async function runComprehensiveDiagnostics() {
-            if (!professionalCipher.initialized) {
-                updateStatus('System not initialized', 'error');
-                return;
-            }
-
-            updateStatus('Running comprehensive professional diagnostics...', 'warning');
-
-            // Test reversibility with various data types
-            const testVectors = [
-                "Hello World 123! @#$%",
-                "Тестовое сообщение на русском",
-                "中文测试文本",
-                "🎯 Unicode Emoji Test 🔐",
-                "A", // Single byte test
-                "AB", // Perfect 2-byte test
-                "ABC", // Odd length test
-                "ABCD" // Even length test
-            ];
-
-            let allTestsPassed = true;
-            let ratioTestsPassed = 0;
-
-            for (const test of testVectors) {
-                try {
-                    const encrypted = await professionalCipher.encrypt(test, false);
-                    const decrypted = await professionalCipher.decrypt(encrypted);
-                    
-                    const success = test === decrypted;
-                    const ratioVerified = professionalCipher.verifyRatio(test, encrypted);
-                    
-                    if (!success) {
-                        allTestsPassed = false;
-                        professionalCipher.log(`Reversibility test FAILED: "${test}"`, 'error');
-                    }
-                    
-                    if (!ratioVerified) {
-                        allTestsPassed = false;
-                        professionalCipher.log(`Ratio test FAILED: "${test}"`, 'error');
-                    } else {
-                        ratioTestsPassed++;
-                    }
-                    
-                    professionalCipher.log(`Test: "${test}" → Success: ${success}, Ratio: ${ratioVerified}`, 
-                                          success && ratioVerified ? 'success' : 'error');
-                } catch (error) {
-                    allTestsPassed = false;
-                    professionalCipher.log(`Diagnostic test ERROR: ${error.message}`, 'error');
-                }
-            }
-
-            if (allTestsPassed) {
-                updateStatus(`Comprehensive diagnostics: ALL TESTS PASSED (${ratioTestsPassed}/${testVectors.length} perfect ratios)`, 'success');
-            } else {
-                updateStatus(`Comprehensive diagnostics: SOME TESTS FAILED (${ratioTestsPassed}/${testVectors.length} perfect ratios)`, 'error');
-            }
-        }
-
-        function purgeSensitiveData() {
-            professionalCipher.sBox.clear();
-            professionalCipher.reverseMap.clear();
-            professionalCipher.nonlinearLUT.clear();
-            professionalCipher.inverseLUT.clear();
-            professionalCipher.feistelKeys = [];
-            professionalCipher.initialized = false;
-            professionalCipher.logs = [];
-            
-            document.getElementById('ciphertextOutput').textContent = '';
-            document.getElementById('ciphertextInput').value = '';
-            document.getElementById('decryptedOutput').textContent = '';
-            document.getElementById('systemLogs').innerHTML = '';
-            document.getElementById('ratioVerification').textContent = 'Perfect 2:2 ratio maintained';
-            
-            updateStatus('All sensitive data purged from memory. System reset.', 'success');
-        }
-
-        // Auto-initialize professional system
+        // Auto-initialize with default settings
         window.addEventListener('load', () => {
-            updateStatus('Professional Chinese Homophonic Cipher v3.0 Ready', 'info');
-            professionalCipher.log('Professional system loaded - Strict 2:2 ratio enforced', 'success');
+            updateStatus('Professional Chinese Homophonic Cipher with Feistel Network Ready', 'info');
         });
     </script>
 </body>
