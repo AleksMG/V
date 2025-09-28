@@ -720,24 +720,22 @@
             }
 
             /**
-             * Calculate entropy for security analysis
+             * Professional entropy analysis for Chinese homophonic cipher
              */
             calculateRealEntropy(ciphertext) {
                 if (!ciphertext || ciphertext.length === 0) return 0;
                 
-                // Analyze character pairs (bigrams)
-                const bigramFrequency = new Map();
-                const totalBigrams = Math.floor(ciphertext.length / 2);
-                
-                for (let i = 0; i < ciphertext.length - 1; i += 2) {
-                    const bigram = ciphertext.substring(i, i + 2);
-                    bigramFrequency.set(bigram, (bigramFrequency.get(bigram) || 0) + 1);
+                // Analyze individual Chinese characters, not pairs
+                const charFrequency = new Map();
+                for (const char of ciphertext) {
+                    charFrequency.set(char, (charFrequency.get(char) || 0) + 1);
                 }
                 
                 let entropy = 0;
+                const length = ciphertext.length;
                 
-                for (const count of bigramFrequency.values()) {
-                    const probability = count / totalBigrams;
+                for (const count of charFrequency.values()) {
+                    const probability = count / length;
                     entropy -= probability * Math.log2(probability);
                 }
                 
@@ -749,15 +747,16 @@
                     return { error: "No ciphertext to analyze" };
                 }
                 
-                // 1. Bigram entropy analysis
-                const bigramEntropy = this.calculateRealEntropy(ciphertext);
+                // 1. Character-level entropy analysis
+                const entropy = this.calculateRealEntropy(ciphertext);
                 
-                // 2. Chi-squared test for uniform distribution
+                // 2. Character frequency distribution
                 const charFrequency = new Map();
                 for (const char of ciphertext) {
                     charFrequency.set(char, (charFrequency.get(char) || 0) + 1);
                 }
                 
+                // 3. Chi-squared test for uniform distribution
                 const expectedFrequency = ciphertext.length / charFrequency.size;
                 let chiSquared = 0;
                 
@@ -765,32 +764,43 @@
                     chiSquared += Math.pow(count - expectedFrequency, 2) / expectedFrequency;
                 }
                 
-                // 3. Repeated sequences test
+                // 4. Repeated character sequences test
                 const sequences = new Set();
                 let repeatedSequences = 0;
                 
-                for (let i = 0; i < ciphertext.length - 3; i += 2) {
-                    const seq = ciphertext.substring(i, i + 4);
+                for (let i = 0; i < ciphertext.length - 1; i++) {
+                    const seq = ciphertext.substring(i, i + 2); // Check character pairs
                     if (sequences.has(seq)) {
                         repeatedSequences++;
                     }
                     sequences.add(seq);
                 }
                 
-                // 4. Maximum theoretical entropy for Chinese pairs
-                const maxPossibleEntropy = Math.log2(1000 * 1000); // 1,000,000 possible pairs
+                // 5. Maximum theoretical entropy based on character set size
+                const characterSetSize = 1000; // Based on initialization
+                const maxPossibleEntropy = Math.log2(characterSetSize);
                 
-                const efficiency = (bigramEntropy / maxPossibleEntropy) * 100;
+                const efficiency = (entropy / maxPossibleEntropy) * 100;
                 
                 return {
-                    bigramEntropy: bigramEntropy,
+                    entropy: entropy,
                     maxPossibleEntropy: maxPossibleEntropy,
                     efficiency: efficiency,
                     chiSquared: chiSquared,
                     repeatedSequences: repeatedSequences,
                     uniqueCharacters: charFrequency.size,
+                    totalCharacters: ciphertext.length,
+                    characterDistribution: this.getCharacterDistribution(charFrequency),
                     rating: this.getEntropyRating(efficiency, chiSquared, repeatedSequences)
                 };
+            }
+
+            getCharacterDistribution(frequencyMap) {
+                const sorted = Array.from(frequencyMap.entries())
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 10); // Top 10 most frequent characters
+                
+                return sorted.map(([char, count]) => `${char}: ${count}`).join(', ');
             }
 
             getEntropyRating(efficiency, chiSquared, repeatedSeqs) {
@@ -912,15 +922,16 @@
                 // Run professional entropy test
                 const entropyResult = cipherSystem.runProfessionalEntropyTest(ciphertext);
                 document.getElementById('entropyResult').textContent = 
-                    `Bigram Entropy: ${entropyResult.bigramEntropy.toFixed(3)} bits\n` +
-                    `Max Possible: ${entropyResult.maxPossibleEntropy.toFixed(3)} bits\n` +
+                    `Character Entropy: ${entropyResult.entropy.toFixed(3)} bits/character\n` +
+                    `Max Possible: ${entropyResult.maxPossibleEntropy.toFixed(3)} bits/character\n` +
                     `Efficiency: ${entropyResult.efficiency.toFixed(1)}%\n` +
                     `Chi-Squared: ${entropyResult.chiSquared.toFixed(1)}\n` +
                     `Repeated Sequences: ${entropyResult.repeatedSequences}\n` +
-                    `Unique Characters: ${entropyResult.uniqueCharacters}\n` +
+                    `Unique Characters: ${entropyResult.uniqueCharacters}/${entropyResult.totalCharacters}\n` +
+                    `Top Characters: ${entropyResult.characterDistribution}\n` +
                     `Rating: ${entropyResult.rating}`;
                 
-                updateStatus(`Encryption successful! Entropy: ${entropyResult.bigramEntropy.toFixed(2)} bits/character`, 'success');
+                updateStatus(`Encryption successful! Entropy: ${entropyResult.entropy.toFixed(2)} bits/character`, 'success');
                 
             } catch (error) {
                 updateStatus(`Encryption failed: ${error.message}`, 'error');
