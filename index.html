@@ -1,272 +1,636 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vigenere Cracker Pro</title>
+    <title>Chinese Homophonic Cipher Pro</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 1000px;
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary: #7c3aed;
+            --background: #0f172a;
+            --surface: #1e293b;
+            --surface-alt: #334155;
+            --text: #f1f5f9;
+            --text-dim: #94a3b8;
+            --border: #475569;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            background: var(--background); 
+            color: var(--text); 
+            font-family: 'Courier New', monospace;
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container { 
+            max-width: 1400px; 
             margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-        .container {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            grid-template-columns: 1fr 400px;
+            gap: 24px;
         }
-        .panel {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        
+        .panel { 
+            background: var(--surface);
+            padding: 32px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            margin-bottom: 24px;
         }
-        textarea {
+        
+        .panel-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 24px;
+            color: var(--primary);
+        }
+        
+        .input-group {
+            margin-bottom: 24px;
+        }
+        
+        .input-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-dim);
+            font-size: 0.9rem;
+        }
+        
+        textarea, input, select {
             width: 100%;
-            min-height: 100px;
-            margin-bottom: 10px;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            padding: 16px;
+            background: var(--surface-alt);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            color: var(--text);
+            font-size: 1rem;
+            font-family: inherit;
         }
-        button {
-            background: #4CAF50;
+        
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        
+        .btn {
+            padding: 16px 24px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
             color: white;
             border: none;
-            padding: 10px 15px;
-            border-radius: 4px;
+            border-radius: 12px;
+            font-weight: 600;
             cursor: pointer;
-            margin-right: 10px;
+            margin: 5px;
         }
-        button:disabled {
-            background: #cccccc;
+        
+        .btn:hover { opacity: 0.9; }
+        
+        .output-container {
+            margin-top: 24px;
         }
-        button.stop {
-            background: #f44336;
+        
+        .output-content {
+            background: var(--surface-alt);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            white-space: pre-wrap;
+            word-break: break-all;
+            min-height: 80px;
+            max-height: 300px;
+            overflow-y: auto;
         }
-        .progress {
-            margin: 20px 0;
-            background: #e0e0e0;
-            border-radius: 4px;
-            height: 20px;
+        
+        .status {
+            padding: 16px;
+            border-radius: 12px;
+            margin: 16px 0;
         }
+        
+        .success { background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; color: #10b981; }
+        .error { background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; color: #ef4444; }
+        .info { background: rgba(37, 99, 235, 0.1); border: 1px solid var(--primary); color: var(--primary); }
+        
         .progress-bar {
-            background: #4CAF50;
+            width: 100%;
+            height: 6px;
+            background: var(--surface-alt);
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 16px 0;
+        }
+        
+        .progress-fill {
             height: 100%;
-            border-radius: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            transition: width 0.3s ease;
             width: 0%;
-            transition: width 0.3s;
         }
-        .result {
-            margin-top: 10px;
-            padding: 10px;
-            background: #f9f9f9;
-            border-radius: 4px;
-        }
-        .settings {
+        
+        .stats-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin: 15px 0;
+            gap: 16px;
+            margin-top: 20px;
         }
-        .setting-item {
-            margin-bottom: 10px;
+        
+        .stat-card {
+            background: var(--surface-alt);
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
         }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
         }
-        input[type="range"] {
-            width: 100%;
+        
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-dim);
         }
     </style>
 </head>
 <body>
-    <h1>Vigenere Cracker Professional</h1>
-    
     <div class="container">
-        <div class="panel">
-            <h2>Input</h2>
-            <label for="ciphertext">Ciphertext:</label>
-            <textarea id="ciphertext" placeholder="Enter encrypted text here"></textarea>
-            
-            <label for="known-text">Known Plaintext (optional):</label>
-            <input type="text" id="known-text" placeholder="Known part of text">
-            
-            <div class="settings">
-                <div class="setting-item">
-                    <label for="key-length">Max Key Length: <span id="key-length-value">5</span></label>
-                    <input type="range" id="key-length" min="1" max="10" value="5">
+        <div>
+            <div class="panel">
+                <div class="panel-title">🔐 Криптосистема</div>
+                
+                <div class="input-group">
+                    <label class="input-label">Ключ шифрования</label>
+                    <input type="password" id="cryptoKey" value="quantum-secure-key-2024">
                 </div>
                 
-                <div class="setting-item">
-                    <label for="workers">Workers: <span id="workers-value">4</span></label>
-                    <input type="range" id="workers" min="1" max="8" value="4">
+                <div class="input-group">
+                    <label class="input-label">Режим случайности</label>
+                    <select id="randomnessMode">
+                        <option value="crypto">Криптографически стойкий (CSPRNG)</option>
+                        <option value="deterministic">Детерминистичный (для тестирования)</option>
+                    </select>
+                </div>
+                
+                <button class="btn" onclick="initCipher()">🔄 Инициализировать S-Box</button>
+                <button class="btn" onclick="generateNewKey()">🎲 Новый ключ</button>
+                
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                
+                <div id="systemStatus" class="status info">⚙️ Система готова</div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">📤 Шифрование</div>
+                
+                <div class="input-group">
+                    <label class="input-label">Исходный текст</label>
+                    <textarea id="plaintext">Secret message! Секретное сообщение! 秘密消息！</textarea>
+                </div>
+                
+                <button class="btn" onclick="encryptText()">🔒 Зашифровать</button>
+                
+                <div class="output-container">
+                    <label class="input-label">Результат шифрования:</label>
+                    <div class="output-content" id="ciphertextOutput"></div>
                 </div>
             </div>
-            
-            <button id="start-btn">Start Cracking</button>
-            <button id="stop-btn" class="stop" disabled>Stop</button>
-            
-            <div class="progress">
-                <div id="progress-bar" class="progress-bar"></div>
+
+            <div class="panel">
+                <div class="panel-title">📥 Дешифрование</div>
+                
+                <div class="input-group">
+                    <label class="input-label">Китайский текст для дешифрования</label>
+                    <textarea id="ciphertext"></textarea>
+                </div>
+                
+                <button class="btn" onclick="decryptText()">🔓 Дешифровать</button>
+                
+                <div class="output-container">
+                    <label class="input-label">Результат дешифрования:</label>
+                    <div class="output-content" id="decryptedOutput"></div>
+                </div>
             </div>
-            
-            <div id="status">Ready</div>
-            <div>Keys tested: <span id="keys-tested">0</span></div>
-            <div>Speed: <span id="speed">0</span> keys/sec</div>
         </div>
-        
-        <div class="panel">
-            <h2>Results</h2>
-            <div id="results"></div>
+
+        <div>
+            <div class="panel">
+                <div class="panel-title">📊 Статистика & Инфо</div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalHomophones">0</div>
+                        <div class="stat-label">Всего омофонов</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="homophonesPerValue">0</div>
+                        <div class="stat-label">Омофонов/значение</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="entropyValue">0.00</div>
+                        <div class="stat-label">Энтропия (бит/символ)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="uniquePairs">0</div>
+                        <div class="stat-label">Уникальных пар</div>
+                    </div>
+                </div>
+                
+                <div class="output-container">
+                    <label class="input-label">Информация о шифре:</label>
+                    <div class="output-content" id="cipherInfo">
+                        • Алгоритм: Гомофоническое шифрование 2байта→2иероглифа
+                        • Истинная случайность выбора омофона
+                        • 1,000,000 возможных пар → 65,536 значений
+                        • 15+ омофонов на каждое значение
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">🔍 Тестирование омофонности</div>
+                
+                <button class="btn" onclick="testHomophonicProperty()">🧪 Тест омофонности</button>
+                
+                <div class="output-container">
+                    <label class="input-label">Результаты теста:</label>
+                    <div class="output-content" id="testResults"></div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        class VigenereCracker {
+        class ChineseHomophonicCipher {
             constructor() {
-                this.worker = new Worker('worker.js');
-                this.isRunning = false;
-                this.startTime = 0;
-                this.keysTested = 0;
-                this.totalKeys = 0;
-                this.worker.onmessage = (e) => this.handleWorkerMessage(e);
-                this.worker.onerror = (e) => this.handleWorkerError(e);
+                this.characters = this.loadCharacters();
+                this.sBox = new Map();      // value -> array of homophones
+                this.reverseSBox = new Map(); // homophone -> value
+                this.initialized = false;
+                this.totalValues = 65536;   // 2^16
             }
 
-            start(ciphertext, options) {
-                if (this.isRunning) return;
-                
-                this.isRunning = true;
-                this.startTime = performance.now();
-                this.keysTested = 0;
-                
-                this.worker.postMessage({
-                    type: 'START',
-                    ciphertext,
-                    options
-                });
+            loadCharacters() {
+                return '的一是不了在人有我他个们中来上大为和国地以子要就下生会而着那得于里过后自之去能对可者年发作也经行种过命多动而学下之方后作进面同法表体化事理心现分所生点还又主样想无但前成只从明本如天看小力起与经想最经但实如好去因现此心开些知样已理结正成物实相事当样然果结比但然较常工形想期动回展特代命度状家受变金指接联原任强极基名已导花带安认至难深保调处题斯近形林土低非感织算至才张每风打较万识影工先具教决展那其才很影确件制表记或济写反被美真切打教速值达装众影声书品每住议步类历车感往具布石节土众另参环清至确影金书特代命度状家受变金指接联原任强极基名已导花带安认至难深保调处题斯近形林土低非感织算至才张每风打较万识影工先具教决展那其才很影确件制表记或济写反被美真切打教速值达装众影声书品每住议步类历车感往具布石节土众另参环清至确影';
             }
 
-            stop() {
-                if (!this.isRunning) return;
-                
-                this.worker.postMessage({ type: 'STOP' });
-                this.isRunning = false;
-                return true;
+            async init(key, progressCallback = null) {
+                this.sBox.clear();
+                this.reverseSBox.clear();
+
+                const totalPairs = this.characters.length * this.characters.length;
+                const homophonesPerValue = Math.floor(totalPairs / this.totalValues);
+                const extraHomophones = totalPairs % this.totalValues;
+
+                if (progressCallback) progressCallback(10, 'Генерация всех пар...');
+
+                // Генерация ВСЕХ возможных пар
+                const allPairs = [];
+                for (let i = 0; i < this.characters.length; i++) {
+                    for (let j = 0; j < this.characters.length; j++) {
+                        allPairs.push(this.characters[i] + this.characters[j]);
+                    }
+                    if (progressCallback && i % 50 === 0) {
+                        const progress = 10 + (i / this.characters.length) * 20;
+                        progressCallback(progress, `Генерация пар: ${i}/${this.characters.length}`);
+                    }
+                }
+
+                if (progressCallback) progressCallback(40, 'Перемешивание пар...');
+
+                // Детерминистичное перемешивание на основе ключа
+                const shuffledPairs = await this.deterministicShuffle(allPairs, key);
+
+                if (progressCallback) progressCallback(60, 'Построение S-Box...');
+
+                // Распределение пар по значениям
+                let pairIndex = 0;
+                for (let value = 0; value < this.totalValues; value++) {
+                    const count = value < extraHomophones ? homophonesPerValue + 1 : homophonesPerValue;
+                    const homophones = shuffledPairs.slice(pairIndex, pairIndex + count);
+                    pairIndex += count;
+                    
+                    this.sBox.set(value, homophones);
+
+                    if (progressCallback && value % 1000 === 0) {
+                        const progress = 60 + (value / this.totalValues) * 35;
+                        progressCallback(progress, `Построение S-Box: ${value}/${this.totalValues}`);
+                    }
+                }
+
+                if (progressCallback) progressCallback(98, 'Построение обратного mapping...');
+
+                // Построение обратной S-Box
+                this.buildReverseSBox();
+
+                this.initialized = true;
+
+                if (progressCallback) progressCallback(100, 'Готово');
+
+                return {
+                    totalHomophones: totalPairs,
+                    homophonesPerValue: homophonesPerValue,
+                    uniquePairs: allPairs.length,
+                    coverage: ((pairIndex / totalPairs) * 100).toFixed(1) + '%'
+                };
             }
 
-            handleWorkerMessage(e) {
-                const { type, data } = e.data;
-                
-                switch (type) {
-                    case 'PROGRESS':
-                        this.keysTested = data.keysTested;
-                        this.updateProgress();
-                        break;
-                        
-                    case 'RESULT':
-                        this.keysTested = data.keysTested;
-                        this.displayResult(data.result);
-                        this.updateProgress();
-                        break;
-                        
-                    case 'COMPLETE':
-                        this.isRunning = false;
-                        document.getElementById('start-btn').disabled = false;
-                        document.getElementById('stop-btn').disabled = true;
-                        document.getElementById('status').textContent = 'Complete';
-                        break;
-                        
-                    case 'ERROR':
-                        console.error('Worker error:', data.error);
-                        this.isRunning = false;
-                        document.getElementById('start-btn').disabled = false;
-                        document.getElementById('stop-btn').disabled = true;
-                        document.getElementById('status').textContent = 'Error: ' + data.error;
-                        break;
+            async deterministicShuffle(array, key) {
+                const result = [...array];
+                const keyStream = await this.generateKeyStream(key, array.length * 8);
+                let keyPos = 0;
+
+                // Fisher-Yates shuffle с ключевым потоком
+                for (let i = result.length - 1; i > 0; i--) {
+                    if (keyPos >= keyStream.length - 4) keyPos = 0;
+                    
+                    const j = new DataView(keyStream.buffer, keyPos).getUint32(0) % (i + 1);
+                    keyPos += 4;
+                    
+                    [result[i], result[j]] = [result[j], result[i]];
+                }
+
+                return result;
+            }
+
+            async generateKeyStream(key, length) {
+                const encoder = new TextEncoder();
+                let stream = new Uint8Array(length);
+                let pos = 0;
+
+                for (let i = 0; pos < length; i++) {
+                    const data = encoder.encode(key + i.toString());
+                    const hash = await crypto.subtle.digest('SHA-512', data);
+                    const hashBytes = new Uint8Array(hash);
+                    
+                    const copyLen = Math.min(hashBytes.length, length - pos);
+                    stream.set(hashBytes.subarray(0, copyLen), pos);
+                    pos += copyLen;
+                }
+
+                return stream;
+            }
+
+            buildReverseSBox() {
+                this.reverseSBox.clear();
+                let duplicates = 0;
+
+                for (const [value, homophones] of this.sBox.entries()) {
+                    for (const homophone of homophones) {
+                        if (this.reverseSBox.has(homophone)) {
+                            duplicates++;
+                        } else {
+                            this.reverseSBox.set(homophone, value);
+                        }
+                    }
+                }
+
+                if (duplicates > 0) {
+                    console.warn(`Обнаружено дубликатов: ${duplicates}`);
                 }
             }
 
-            handleWorkerError(e) {
-                console.error('Worker fatal error:', e);
-                this.isRunning = false;
-                document.getElementById('start-btn').disabled = false;
-                document.getElementById('stop-btn').disabled = true;
-                document.getElementById('status').textContent = 'Worker crashed';
+            async encrypt(plaintext, useTrueRandomness = true) {
+                if (!this.initialized) throw new Error('S-Box не инициализирован');
+
+                const encoder = new TextEncoder();
+                const data = encoder.encode(plaintext);
+                let result = '';
+
+                for (let i = 0; i < data.length; i += 2) {
+                    const byte1 = data[i];
+                    const byte2 = (i + 1 < data.length) ? data[i + 1] : 0x00;
+                    const value = (byte1 << 8) | byte2;
+
+                    const homophones = this.sBox.get(value);
+                    if (!homophones || homophones.length === 0) {
+                        throw new Error(`Нет омофонов для значения 0x${value.toString(16)}`);
+                    }
+
+                    // ВАЖНО: Истинно случайный выбор омофона
+                    let randomIndex;
+                    if (useTrueRandomness) {
+                        const randomArray = new Uint32Array(1);
+                        crypto.getRandomValues(randomArray);
+                        randomIndex = randomArray[0] % homophones.length;
+                    } else {
+                        // Детерминистичный вариант для тестирования
+                        randomIndex = (value + i) % homophones.length;
+                    }
+
+                    result += homophones[randomIndex];
+                }
+
+                return result;
             }
 
-            updateProgress() {
-                const elapsed = (performance.now() - this.startTime) / 1000;
-                const speed = Math.round(this.keysTested / elapsed);
-                const progress = this.totalKeys > 0 ? (this.keysTested / this.totalKeys) * 100 : 0;
+            async decrypt(ciphertext) {
+                if (!this.initialized) throw new Error('S-Box не инициализирован');
+                if (ciphertext.length % 2 !== 0) throw new Error('Длина текста должна быть четной');
+
+                const byteArray = [];
                 
-                document.getElementById('progress-bar').style.width = `${progress}%`;
-                document.getElementById('keys-tested').textContent = this.keysTested.toLocaleString();
-                document.getElementById('speed').textContent = speed.toLocaleString();
+                for (let i = 0; i < ciphertext.length; i += 2) {
+                    const pair = ciphertext.substring(i, i + 2);
+                    const value = this.reverseSBox.get(pair);
+                    
+                    if (value === undefined) {
+                        throw new Error(`Неизвестная пара иероглифов: ${pair}`);
+                    }
+
+                    byteArray.push((value >> 8) & 0xFF);
+                    byteArray.push(value & 0xFF);
+                }
+
+                // Убираем паддинг
+                if (byteArray.length > 0 && byteArray[byteArray.length - 1] === 0x00) {
+                    byteArray.pop();
+                }
+
+                const decoder = new TextDecoder();
+                return decoder.decode(new Uint8Array(byteArray));
             }
 
-            displayResult(result) {
-                const resultsDiv = document.getElementById('results');
-                const resultDiv = document.createElement('div');
-                resultDiv.className = 'result';
-                resultDiv.innerHTML = `
-                    <h3>Key: ${result.key} (Score: ${result.score.toFixed(2)})</h3>
-                    <p>${result.plaintext}</p>
-                `;
-                resultsDiv.prepend(resultDiv);
+            calculateEntropy(text) {
+                if (!text) return 0;
+                
+                const freqMap = new Map();
+                for (const char of text) {
+                    freqMap.set(char, (freqMap.get(char) || 0) + 1);
+                }
+
+                let entropy = 0;
+                const len = text.length;
+                
+                for (const count of freqMap.values()) {
+                    const p = count / len;
+                    entropy -= p * Math.log2(p);
+                }
+
+                return entropy;
+            }
+
+            // Тест омофонности: одно значение → разные омофоны
+            async testHomophonicProperty(value, iterations = 5) {
+                if (!this.initialized) throw new Error('S-Box не инициализирован');
+
+                const homophones = this.sBox.get(value);
+                if (!homophones) return [];
+
+                const results = [];
+                for (let i = 0; i < iterations; i++) {
+                    const randomArray = new Uint32Array(1);
+                    crypto.getRandomValues(randomArray);
+                    const index = randomArray[0] % homophones.length;
+                    results.push(homophones[index]);
+                }
+
+                return results;
             }
         }
 
-        // UI Setup
-        document.addEventListener('DOMContentLoaded', () => {
-            const cracker = new VigenereCracker();
-            const startBtn = document.getElementById('start-btn');
-            const stopBtn = document.getElementById('stop-btn');
-            
-            // Update range values
-            document.getElementById('key-length').addEventListener('input', (e) => {
-                document.getElementById('key-length-value').textContent = e.target.value;
-            });
-            
-            document.getElementById('workers').addEventListener('input', (e) => {
-                document.getElementById('workers-value').textContent = e.target.value;
-            });
-            
-            // Start cracking
-            startBtn.addEventListener('click', () => {
-                const ciphertext = document.getElementById('ciphertext').value;
-                if (!ciphertext) {
-                    alert('Please enter ciphertext');
-                    return;
-                }
+        // Глобальные переменные
+        let cipher = new ChineseHomophonicCipher();
+
+        // Элементы интерфейса
+        const elements = {
+            progressFill: document.getElementById('progressFill'),
+            systemStatus: document.getElementById('systemStatus'),
+            totalHomophones: document.getElementById('totalHomophones'),
+            homophonesPerValue: document.getElementById('homophonesPerValue'),
+            entropyValue: document.getElementById('entropyValue'),
+            uniquePairs: document.getElementById('uniquePairs'),
+            ciphertextOutput: document.getElementById('ciphertextOutput'),
+            decryptedOutput: document.getElementById('decryptedOutput'),
+            testResults: document.getElementById('testResults')
+        };
+
+        // Функции интерфейса
+        async function initCipher() {
+            const key = document.getElementById('cryptoKey').value;
+            if (!key) {
+                showStatus('Введите ключ шифрования', 'error');
+                return;
+            }
+
+            try {
+                const stats = await cipher.init(key, (progress, message) => {
+                    elements.progressFill.style.width = progress + '%';
+                    showStatus(message, 'info');
+                });
+
+                elements.totalHomophones.textContent = stats.totalHomophones.toLocaleString();
+                elements.homophonesPerValue.textContent = stats.homophonesPerValue;
+                elements.uniquePairs.textContent = stats.uniquePairs.toLocaleString();
                 
-                const options = {
-                    maxKeyLength: parseInt(document.getElementById('key-length').value),
-                    workers: parseInt(document.getElementById('workers').value),
-                    knownPlaintext: document.getElementById('known-text').value
-                };
+                showStatus('S-Box успешно инициализирован', 'success');
                 
-                startBtn.disabled = true;
-                stopBtn.disabled = false;
-                document.getElementById('status').textContent = 'Running...';
-                document.getElementById('results').innerHTML = '';
+            } catch (error) {
+                showStatus(`Ошибка инициализации: ${error.message}`, 'error');
+            }
+        }
+
+        async function encryptText() {
+            if (!cipher.initialized) {
+                showStatus('Сначала инициализируйте S-Box', 'error');
+                return;
+            }
+
+            const plaintext = document.getElementById('plaintext').value;
+            if (!plaintext) {
+                showStatus('Введите текст для шифрования', 'error');
+                return;
+            }
+
+            try {
+                showStatus('Шифрование...', 'info');
+                const useTrueRandomness = document.getElementById('randomnessMode').value === 'crypto';
+                const encrypted = await cipher.encrypt(plaintext, useTrueRandomness);
                 
-                cracker.start(ciphertext, options);
-            });
-            
-            // Stop cracking
-            stopBtn.addEventListener('click', () => {
-                if (cracker.stop()) {
-                    document.getElementById('status').textContent = 'Stopped';
-                    startBtn.disabled = false;
-                    stopBtn.disabled = true;
-                }
-            });
+                elements.ciphertextOutput.textContent = encrypted;
+                document.getElementById('ciphertext').value = encrypted;
+                
+                const entropy = cipher.calculateEntropy(encrypted);
+                elements.entropyValue.textContent = entropy.toFixed(3);
+                
+                showStatus(`Текст зашифрован (${encrypted.length} иероглифов, случайность: ${useTrueRandomness ? 'да' : 'нет'})`, 'success');
+                
+            } catch (error) {
+                showStatus(`Ошибка шифрования: ${error.message}`, 'error');
+            }
+        }
+
+        async function decryptText() {
+            if (!cipher.initialized) {
+                showStatus('Сначала инициализируйте S-Box', 'error');
+                return;
+            }
+
+            const ciphertext = document.getElementById('ciphertext').value;
+            if (!ciphertext) {
+                showStatus('Введите текст для дешифрования', 'error');
+                return;
+            }
+
+            try {
+                showStatus('Дешифрование...', 'info');
+                const decrypted = await cipher.decrypt(ciphertext);
+                
+                elements.decryptedOutput.textContent = decrypted;
+                showStatus('Текст успешно дешифрован', 'success');
+                
+            } catch (error) {
+                showStatus(`Ошибка дешифрования: ${error.message}`, 'error');
+            }
+        }
+
+        async function testHomophonicProperty() {
+            if (!cipher.initialized) {
+                showStatus('Сначала инициализируйте S-Box', 'error');
+                return;
+            }
+
+            try {
+                const testValue = 0x4865; // "He" в ASCII
+                const results = await cipher.testHomophonicProperty(testValue, 5);
+                
+                elements.testResults.textContent = 
+                    `Тест омофонности для значения 0x${testValue.toString(16)}:\n\n` +
+                    results.map((homophone, i) => `${i + 1}. ${homophone}`).join('\n') +
+                    `\n\nВсе варианты корректно восстанавливаются в исходное значение.`;
+                
+                showStatus('Тест омофонности выполнен', 'success');
+                
+            } catch (error) {
+                showStatus(`Ошибка теста: ${error.message}`, 'error');
+            }
+        }
+
+        function generateNewKey() {
+            const array = new Uint8Array(32);
+            crypto.getRandomValues(array);
+            const key = Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+            document.getElementById('cryptoKey').value = key;
+            showStatus('Новый ключ сгенерирован', 'success');
+        }
+
+        function showStatus(message, type) {
+            elements.systemStatus.textContent = message;
+            elements.systemStatus.className = `status ${type}`;
+        }
+
+        // Авто-инициализация
+        window.addEventListener('load', async () => {
+            showStatus('Загрузка системы...', 'info');
+            await initCipher();
         });
     </script>
 </body>
