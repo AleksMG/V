@@ -205,15 +205,6 @@
             </div>
 
             <div class="input-group">
-                <label>SECURITY LEVEL</label>
-                <select id="securityLevel">
-                    <option value="4">4 Rounds (Standard)</option>
-                    <option value="8">8 Rounds (Enterprise)</option>
-                    <option value="12">12 Rounds (Military)</option>
-                </select>
-            </div>
-
-            <div class="input-group">
                 <label>CHARACTER SET SIZE</label>
                 <select id="characterSet">
                     <option value="1000">1000 Characters (1,000,000 homophones)</option>
@@ -240,10 +231,6 @@
                     <div class="stat-label">TOTAL HOMOPHONES</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value" id="feistelRounds">0</div>
-                    <div class="stat-label">FEISTEL ROUNDS</div>
-                </div>
-                <div class="stat-card">
                     <div class="stat-value" id="sboxSize">65,536</div>
                     <div class="stat-label">S-BOX CELLS</div>
                 </div>
@@ -260,6 +247,15 @@
             <div class="input-group">
                 <label>PLAINTEXT (Any Language)</label>
                 <textarea id="plaintext">Top secret message! Confidential data 2024.</textarea>
+            </div>
+
+            <div class="input-group">
+                <label>FEISTEL ROUNDS</label>
+                <select id="feistelRounds">
+                    <option value="4">4 Rounds (Standard)</option>
+                    <option value="8">8 Rounds (Enterprise)</option>
+                    <option value="12">12 Rounds (Military)</option>
+                </select>
             </div>
 
             <div class="input-group">
@@ -293,6 +289,15 @@
                 <textarea id="ciphertextInput"></textarea>
             </div>
 
+            <div class="input-group">
+                <label>FEISTEL ROUNDS (Must match encryption)</label>
+                <select id="decryptFeistelRounds">
+                    <option value="4">4 Rounds</option>
+                    <option value="8">8 Rounds</option>
+                    <option value="12">12 Rounds</option>
+                </select>
+            </div>
+
             <button class="btn btn-primary" onclick="decryptMessage()">
                 🔓 DECRYPT MESSAGE
             </button>
@@ -309,9 +314,7 @@
             constructor() {
                 this.sBox = new Map();
                 this.reverseMap = new Map();
-                this.feistelKeys = [];
                 this.initialized = false;
-                this.feistelRounds = 4;
                 this.metrics = {
                     initializationTime: 0,
                     encryptionSpeed: 0,
@@ -320,27 +323,20 @@
                 };
             }
 
-            async initializeSystem(encryptionKey, characterCount = 1000, feistelRounds = 4, progressCallback = null) {
+            async initializeSystem(encryptionKey, characterCount = 1000, progressCallback = null) {
                 const startTime = performance.now();
                 
                 this.sBox.clear();
                 this.reverseMap.clear();
-                this.feistelKeys = [];
                 this.initialized = false;
-                this.feistelRounds = feistelRounds;
 
-                if (progressCallback) progressCallback(10, "Initializing Feistel network...");
-
-                // Initialize Feistel keys
-                await this.initFeistelNetwork(encryptionKey, feistelRounds);
-
-                if (progressCallback) progressCallback(30, "Generating character set...");
+                if (progressCallback) progressCallback(10, "Generating character set...");
 
                 // Generate character set
                 const characters = this.generateCharacterSet(characterCount);
                 const totalPairs = characterCount * characterCount;
 
-                if (progressCallback) progressCallback(50, "Creating homophone pairs...");
+                if (progressCallback) progressCallback(30, "Creating homophone pairs...");
 
                 // Create all possible homophone pairs
                 const allHomophones = [];
@@ -349,15 +345,18 @@
                         allHomophones.push(characters[i] + characters[j]);
                     }
                     if (progressCallback && i % 100 === 0) {
-                        progressCallback(50 + (i / characterCount) * 20, 
+                        progressCallback(30 + (i / characterCount) * 20, 
                             `Generated ${(i * characterCount).toLocaleString()}/${totalPairs.toLocaleString()} pairs`);
                     }
                 }
 
-                if (progressCallback) progressCallback(70, "Building S-Box...");
+                if (progressCallback) progressCallback(50, "Key-based shuffling...");
 
                 // Key-based shuffling and S-Box building
                 const shuffledHomophones = await this.optimizedShuffle(allHomophones, encryptionKey);
+
+                if (progressCallback) progressCallback(70, "Building S-Box...");
+
                 await this.buildSBox(shuffledHomophones, progressCallback);
 
                 this.initialized = true;
@@ -366,20 +365,8 @@
                 return {
                     charactersUsed: characterCount,
                     totalHomophones: totalPairs,
-                    feistelRounds: feistelRounds,
                     verification: "PASS"
                 };
-            }
-
-            async initFeistelNetwork(key, rounds) {
-                this.feistelKeys = [];
-                
-                for (let round = 0; round < rounds; round++) {
-                    const roundKeyData = new TextEncoder().encode(key + round.toString());
-                    const hash = await crypto.subtle.digest('SHA-256', roundKeyData);
-                    const hashArray = new Uint32Array(hash.buffer);
-                    this.feistelKeys.push(hashArray);
-                }
             }
 
             generateCharacterSet(count) {
@@ -476,29 +463,49 @@
                 }
             }
 
-            // FEISTEL NETWORK APPLIED BEFORE S-BOX
-            applyFeistelNetwork(byte1, byte2) {
+            // FEISTEL NETWORK APPLIED DURING ENCRYPTION (not during S-box generation)
+            applyFeistelNetwork(byte1, byte2, rounds, encryptionKey) {
                 let left = byte1;
                 let right = byte2;
                 
+                // Generate round keys for this specific encryption
+                const roundKeys = this.generateRoundKeys(encryptionKey, rounds);
+                
                 // Forward Feistel rounds
-                for (let round = 0; round < this.feistelRounds; round++) {
-                    [left, right] = this.feistelRound(left, right, this.feistelKeys[round]);
+                for (let round = 0; round < rounds; round++) {
+                    [left, right] = this.feistelRound(left, right, roundKeys[round]);
                 }
                 
                 return [left, right];
             }
 
-            reverseFeistelNetwork(byte1, byte2) {
+            reverseFeistelNetwork(byte1, byte2, rounds, encryptionKey) {
                 let left = byte1;
                 let right = byte2;
                 
+                // Generate the same round keys for decryption
+                const roundKeys = this.generateRoundKeys(encryptionKey, rounds);
+                
                 // Reverse Feistel rounds
-                for (let round = this.feistelRounds - 1; round >= 0; round--) {
-                    [right, left] = this.feistelRound(right, left, this.feistelKeys[round]);
+                for (let round = rounds - 1; round >= 0; round--) {
+                    [right, left] = this.feistelRound(right, left, roundKeys[round]);
                 }
                 
                 return [left, right];
+            }
+
+            generateRoundKeys(encryptionKey, rounds) {
+                const roundKeys = [];
+                
+                for (let round = 0; round < rounds; round++) {
+                    const roundKeyData = new TextEncoder().encode(encryptionKey + round.toString());
+                    const hash = crypto.subtle.digest('SHA-256', roundKeyData).then(hash => {
+                        return new Uint32Array(hash);
+                    });
+                    roundKeys.push(hash);
+                }
+                
+                return Promise.all(roundKeys);
             }
 
             feistelRound(left, right, roundKey) {
@@ -527,7 +534,7 @@
                 return x & 0xFF;
             }
 
-            encrypt(plaintext) {
+            async encrypt(plaintext, feistelRounds, encryptionKey) {
                 if (!this.initialized) throw new Error("Professional system not initialized");
 
                 const startTime = performance.now();
@@ -560,8 +567,8 @@
                         byte2 ^= previousBlock[1];
                     }
 
-                    // APPLY FEISTEL NETWORK BEFORE S-BOX
-                    const [feistelLeft, feistelRight] = this.applyFeistelNetwork(byte1, byte2);
+                    // APPLY FEISTEL NETWORK BEFORE S-BOX (during encryption process)
+                    const [feistelLeft, feistelRight] = await this.applyFeistelNetwork(byte1, byte2, feistelRounds, encryptionKey);
                     const feistelValue = (feistelLeft << 8) | feistelRight;
 
                     // THEN USE S-BOX FOR HOMOPHONIC SUBSTITUTION
@@ -587,7 +594,7 @@
                 return ciphertext;
             }
 
-            decrypt(ciphertext) {
+            async decrypt(ciphertext, feistelRounds, encryptionKey) {
                 if (!this.initialized) throw new Error("Professional system not initialized");
                 if (ciphertext.length % 2 !== 0) throw new Error("Ciphertext length must be even");
 
@@ -605,12 +612,12 @@
                         throw new Error(`Unknown homophone sequence at position ${i}: ${homophone}`);
                     }
 
-                    // EXTRACT FEISTEL VALUES FROM S-BOX
+                    // EXTRACT VALUES FROM S-BOX
                     const feistelLeft = (sboxValue >> 8) & 0xFF;
                     const feistelRight = sboxValue & 0xFF;
 
-                    // REVERSE FEISTEL NETWORK AFTER S-BOX
-                    const [byte1, byte2] = this.reverseFeistelNetwork(feistelLeft, feistelRight);
+                    // REVERSE FEISTEL NETWORK AFTER S-BOX (during decryption process)
+                    const [byte1, byte2] = await this.reverseFeistelNetwork(feistelLeft, feistelRight, feistelRounds, encryptionKey);
 
                     let decryptedByte1 = byte1;
                     let decryptedByte2 = byte2;
@@ -655,7 +662,7 @@
                 return entropy;
             }
 
-            runSecurityAnalysis(ciphertext) {
+            runSecurityAnalysis(ciphertext, feistelRounds) {
                 const entropy = this.calculateEntropy(ciphertext);
                 const maxEntropy = Math.log2(1000);
                 const efficiency = (entropy / maxEntropy) * 100;
@@ -664,7 +671,7 @@
                     entropy: entropy,
                     maxPossible: maxEntropy,
                     efficiency: efficiency,
-                    feistelRounds: this.feistelRounds,
+                    feistelRounds: feistelRounds,
                     rating: efficiency > 95 ? "EXCELLENT" : 
                            efficiency > 90 ? "VERY GOOD" :
                            efficiency > 85 ? "GOOD" : 
@@ -691,7 +698,6 @@
         async function initializeCipherSystem() {
             const key = document.getElementById('encryptionKey').value;
             const characterCount = parseInt(document.getElementById('characterSet').value);
-            const feistelRounds = parseInt(document.getElementById('securityLevel').value);
 
             if (!key) {
                 updateStatus('Please enter an encryption key', 'error');
@@ -699,21 +705,19 @@
             }
 
             try {
-                updateStatus('Initializing professional cipher system with Feistel network...', 'info');
+                updateStatus('Initializing professional cipher system...', 'info');
                 
                 const results = await professionalCipher.initializeSystem(
                     key, 
                     characterCount,
-                    feistelRounds,
                     updateProgress
                 );
 
                 // Update statistics
                 document.getElementById('totalHomophones').textContent = results.totalHomophones.toLocaleString();
                 document.getElementById('characterCount').textContent = results.charactersUsed;
-                document.getElementById('feistelRounds').textContent = results.feistelRounds;
 
-                updateStatus(`Professional system ready! ${results.feistelRounds} Feistel rounds, ${results.totalHomophones.toLocaleString()} homophones`, 'success');
+                updateStatus(`Professional system ready! ${results.totalHomophones.toLocaleString()} homophones`, 'success');
                 
             } catch (error) {
                 updateStatus(`Professional initialization failed: ${error.message}`, 'error');
@@ -721,13 +725,15 @@
             }
         }
 
-        function encryptMessage() {
+        async function encryptMessage() {
             if (!professionalCipher.initialized) {
                 updateStatus('Please initialize the professional system first', 'error');
                 return;
             }
 
             const plaintext = document.getElementById('plaintext').value;
+            const feistelRounds = parseInt(document.getElementById('feistelRounds').value);
+            const encryptionKey = document.getElementById('encryptionKey').value;
 
             if (!plaintext) {
                 updateStatus('Please enter text to encrypt', 'error');
@@ -735,14 +741,17 @@
             }
 
             try {
-                updateStatus('Encrypting with Feistel network...', 'info');
-                const ciphertext = professionalCipher.encrypt(plaintext);
+                updateStatus(`Encrypting with ${feistelRounds} Feistel rounds...`, 'info');
+                const ciphertext = await professionalCipher.encrypt(plaintext, feistelRounds, encryptionKey);
                 
                 document.getElementById('ciphertextOutput').textContent = ciphertext;
                 document.getElementById('ciphertextInput').value = ciphertext;
                 
+                // Set the same rounds for decryption
+                document.getElementById('decryptFeistelRounds').value = feistelRounds.toString();
+                
                 // Run security analysis
-                const analysis = professionalCipher.runSecurityAnalysis(ciphertext);
+                const analysis = professionalCipher.runSecurityAnalysis(ciphertext, feistelRounds);
                 document.getElementById('entropyResult').textContent = 
                     `Feistel Rounds: ${analysis.feistelRounds}\n` +
                     `Entropy: ${analysis.entropy.toFixed(3)} bits/character\n` +
@@ -757,13 +766,15 @@
             }
         }
 
-        function decryptMessage() {
+        async function decryptMessage() {
             if (!professionalCipher.initialized) {
                 updateStatus('Please initialize the professional system first', 'error');
                 return;
             }
 
             const ciphertext = document.getElementById('ciphertextInput').value;
+            const feistelRounds = parseInt(document.getElementById('decryptFeistelRounds').value);
+            const encryptionKey = document.getElementById('encryptionKey').value;
 
             if (!ciphertext) {
                 updateStatus('Please enter ciphertext to decrypt', 'error');
@@ -771,11 +782,11 @@
             }
 
             try {
-                updateStatus('Decrypting with Feistel network...', 'info');
-                const plaintext = professionalCipher.decrypt(ciphertext);
+                updateStatus(`Decrypting with ${feistelRounds} Feistel rounds...`, 'info');
+                const plaintext = await professionalCipher.decrypt(ciphertext, feistelRounds, encryptionKey);
                 
                 document.getElementById('decryptedOutput').textContent = plaintext;
-                updateStatus('Professional decryption successful!', 'success');
+                updateStatus(`Professional decryption successful! Used ${feistelRounds} Feistel rounds`, 'success');
                 
             } catch (error) {
                 updateStatus(`Decryption failed: ${error.message}`, 'error');
