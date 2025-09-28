@@ -583,7 +583,7 @@
             }
 
             /**
-             * Professional Encryption with CBC/ECB support - FIXED VERSION
+             * Professional Encryption with CBC/ECB support
              */
             async encrypt(plaintext, feistelRounds, encryptionKey) {
                 if (!this.initialized) throw new Error("Cipher system not initialized");
@@ -593,64 +593,23 @@
                 const data = encoder.encode(plaintext);
                 let ciphertext = '';
 
-                // ФИКС: Используем 2 байта для длины (до 65,535 символов)
-                const lengthBytes = new Uint16Array([data.length]);
-                const lengthArray = new Uint8Array(lengthBytes.buffer);
-                
-                const extendedData = new Uint8Array(data.length + 2);
-                extendedData.set(lengthArray, 0);  // 2 байта длины
-                extendedData.set(data, 2);         // данные
-
                 const operationMode = document.getElementById('operationMode').value;
                 
-                // Handle CBC mode with proper IV
+                // CBC mode initialization
                 let iv, previousBlock;
                 if (operationMode === 'cbc') {
                     iv = new Uint8Array(2);
                     crypto.getRandomValues(iv);
                     previousBlock = iv;
-                    // Include IV in ciphertext
                     const ivValue = (iv[0] << 8) | iv[1];
                     const ivHomophones = this.sBox.get(ivValue);
                     ciphertext += ivHomophones[0];
                 }
 
-                // ФИКС: Обрабатываем пары байтов без добавления padding
-                for (let i = 0; i < extendedData.length; i += 2) {
-                    // Для последней неполной пары - используем только один байт
-                    if (i + 1 >= extendedData.length) {
-                        // ФИКС: Не добавляем padding, обрабатываем один байт
-                        const byte1 = extendedData[i];
-                        const byte2 = 0x00; // маркер неполного блока
-                        
-                        if (operationMode === 'cbc') {
-                            byte1 ^= previousBlock[0];
-                            byte2 ^= previousBlock[1];
-                        }
-
-                        const [feistelLeft, feistelRight] = await this.applyFeistelNetwork(
-                            byte1, byte2, feistelRounds, encryptionKey
-                        );
-
-                        const feistelValue = (feistelLeft << 8) | feistelRight;
-
-                        // Apply S-Box substitution
-                        const homophones = this.sBox.get(feistelValue);
-                        if (!homophones || homophones.length === 0) {
-                            throw new Error(`No homophones available for value 0x${feistelValue.toString(16)}`);
-                        }
-
-                        // Select random homophone
-                        const cryptoArray = new Uint32Array(1);
-                        crypto.getRandomValues(cryptoArray);
-                        const randomIndex = cryptoArray[0] % homophones.length;
-
-                        ciphertext += homophones[randomIndex];
-                        break;
-                    }
-
-                    let byte1 = extendedData[i];
-                    let byte2 = extendedData[i + 1];
+                // Process data in 2-byte blocks with padding for odd lengths
+                for (let i = 0; i < data.length; i += 2) {
+                    let byte1 = data[i];
+                    let byte2 = (i + 1 < data.length) ? data[i + 1] : 0x00;
 
                     // Apply operation mode
                     if (operationMode === 'cbc') {
@@ -658,7 +617,7 @@
                         byte2 ^= previousBlock[1];
                     }
 
-                    // Apply Feistel network to bytes
+                    // Apply Feistel network
                     const [feistelLeft, feistelRight] = await this.applyFeistelNetwork(
                         byte1, byte2, feistelRounds, encryptionKey
                     );
@@ -671,7 +630,7 @@
                         throw new Error(`No homophones available for value 0x${feistelValue.toString(16)}`);
                     }
 
-                    // Select random homophone
+                    // Select random homophone using cryptographic RNG
                     const cryptoArray = new Uint32Array(1);
                     crypto.getRandomValues(cryptoArray);
                     const randomIndex = cryptoArray[0] % homophones.length;
@@ -689,7 +648,7 @@
             }
 
             /**
-             * Professional Decryption with CBC/ECB support - FIXED VERSION
+             * Professional Decryption with automatic padding removal
              */
             async decrypt(ciphertext, feistelRounds, encryptionKey) {
                 if (!this.initialized) throw new Error("Cipher system not initialized");
@@ -706,13 +665,17 @@
                 if (operationMode === 'cbc') {
                     const ivHomophone = ciphertext.substring(0, 2);
                     const ivValue = this.reverseMap.get(ivHomophone);
+                    if (ivValue === undefined) {
+                        throw new Error("Invalid IV in ciphertext");
+                    }
                     previousBlock = new Uint8Array([
                         (ivValue >> 8) & 0xFF,
                         ivValue & 0xFF
                     ]);
-                    startIndex = 2; // Skip IV
+                    startIndex = 2;
                 }
 
+                // Decrypt all blocks
                 for (let i = startIndex; i < ciphertext.length; i += 2) {
                     const homophone = ciphertext.substring(i, i + 2);
                     const sboxValue = this.reverseMap.get(homophone);
@@ -721,7 +684,6 @@
                         throw new Error(`Unknown homophone sequence at position ${i}: ${homophone}`);
                     }
 
-                    // Extract bytes from S-Box
                     const currentByte1 = (sboxValue >> 8) & 0xFF;
                     const currentByte2 = sboxValue & 0xFF;
 
@@ -740,38 +702,30 @@
                         previousBlock = new Uint8Array([currentByte1, currentByte2]);
                     }
 
-                    byteArray.push(decryptedByte1);
-                    
-                    // ФИКС: Второй байт добавляем только если он не padding
-                    if (decryptedByte2 !== 0x00 || i + 2 < ciphertext.length) {
-                        byteArray.push(decryptedByte2);
-                    }
+                    // Add both bytes - padding will be removed later
+                    byteArray.push(decryptedByte1, decryptedByte2);
                 }
 
-                // ФИКС: Читаем длину из 2 байтов
-                if (byteArray.length < 2) {
-                    throw new Error("Invalid ciphertext: too short");
-                }
-                
-                const length = (byteArray[0] << 8) | byteArray[1];
-                
-                if (byteArray.length < 2 + length) {
-                    throw new Error(`Invalid ciphertext: expected ${length} bytes, got ${byteArray.length - 2}`);
+                // Remove padding bytes from the end
+                let dataEnd = byteArray.length;
+                while (dataEnd > 0 && byteArray[dataEnd - 1] === 0x00) {
+                    dataEnd--;
                 }
 
-                const resultBytes = byteArray.slice(2, 2 + length);
+                const resultBytes = byteArray.slice(0, dataEnd);
                 const result = new TextDecoder().decode(new Uint8Array(resultBytes));
+                
                 this.metrics.decryptionSpeed = ciphertext.length / ((performance.now() - startTime) / 1000);
                 return result;
             }
 
             /**
-             * Calculate entropy for security analysis - FIXED VERSION
+             * Calculate entropy for security analysis
              */
             calculateRealEntropy(ciphertext) {
                 if (!ciphertext || ciphertext.length === 0) return 0;
                 
-                // Анализируем пары символов (биграммы)
+                // Analyze character pairs (bigrams)
                 const bigramFrequency = new Map();
                 const totalBigrams = Math.floor(ciphertext.length / 2);
                 
@@ -795,10 +749,10 @@
                     return { error: "No ciphertext to analyze" };
                 }
                 
-                // 1. Энтропия биграмм
+                // 1. Bigram entropy analysis
                 const bigramEntropy = this.calculateRealEntropy(ciphertext);
                 
-                // 2. Тест на равномерность распределения
+                // 2. Chi-squared test for uniform distribution
                 const charFrequency = new Map();
                 for (const char of ciphertext) {
                     charFrequency.set(char, (charFrequency.get(char) || 0) + 1);
@@ -811,7 +765,7 @@
                     chiSquared += Math.pow(count - expectedFrequency, 2) / expectedFrequency;
                 }
                 
-                // 3. Тест на повторяющиеся последовательности
+                // 3. Repeated sequences test
                 const sequences = new Set();
                 let repeatedSequences = 0;
                 
@@ -823,8 +777,8 @@
                     sequences.add(seq);
                 }
                 
-                // 4. Максимальная теоретическая энтропия для китайских пар
-                const maxPossibleEntropy = Math.log2(1000 * 1000); // 1,000,000 возможных пар
+                // 4. Maximum theoretical entropy for Chinese pairs
+                const maxPossibleEntropy = Math.log2(1000 * 1000); // 1,000,000 possible pairs
                 
                 const efficiency = (bigramEntropy / maxPossibleEntropy) * 100;
                 
@@ -847,7 +801,7 @@
             }
 
             /**
-             * Legacy entropy function (kept for compatibility)
+             * Legacy entropy function (maintained for compatibility)
              */
             calculateEntropy(text) {
                 if (!text) return 0;
@@ -963,7 +917,7 @@
                     `Efficiency: ${entropyResult.efficiency.toFixed(1)}%\n` +
                     `Chi-Squared: ${entropyResult.chiSquared.toFixed(1)}\n` +
                     `Repeated Sequences: ${entropyResult.repeatedSequences}\n` +
-                    `Unique Chars: ${entropyResult.uniqueCharacters}\n` +
+                    `Unique Characters: ${entropyResult.uniqueCharacters}\n` +
                     `Rating: ${entropyResult.rating}`;
                 
                 updateStatus(`Encryption successful! Entropy: ${entropyResult.bigramEntropy.toFixed(2)} bits/character`, 'success');
