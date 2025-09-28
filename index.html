@@ -695,9 +695,9 @@
 
                     // Apply operation mode - FIXED CBC WITH POSITION
                     if (operationMode === 'cbc') {
-                        // Add position to prevent cycling
-                        byte1 ^= previousBlock[0] ^ (i & 0xFF);
-                        byte2 ^= previousBlock[1] ^ ((i >> 8) & 0xFF);
+                        const blockIndex = i / 2;
+                        byte1 ^= previousBlock[0] ^ (blockIndex & 0xFF);
+                        byte2 ^= previousBlock[1] ^ ((blockIndex >> 8) & 0xFF);
                     }
 
                     // Apply Feistel network
@@ -780,11 +780,10 @@
 
                     // Reverse operation mode - FIXED CBC WITH POSITION
                     if (operationMode === 'cbc') {
-                        // Add position to match encryption
                         const blockIndex = (i - startIndex) / 2;
-    decryptedByte1 ^= previousBlock[0] ^ (blockIndex & 0xFF);
-    decryptedByte2 ^= previousBlock[1] ^ ((blockIndex >> 8) & 0xFF);
-    previousBlock = new Uint8Array([currentByte1, currentByte2]);
+                        decryptedByte1 ^= previousBlock[0] ^ (blockIndex & 0xFF);
+                        decryptedByte2 ^= previousBlock[1] ^ ((blockIndex >> 8) & 0xFF);
+                        previousBlock = new Uint8Array([currentByte1, currentByte2]);
                     }
 
                     // Add both bytes - padding will be removed later
