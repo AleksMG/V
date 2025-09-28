@@ -665,7 +665,7 @@
             }
 
             /**
-             * Professional Encryption with CBC/ECB support
+             * Professional Encryption with CBC/ECB support - FIXED CBC
              */
             async encrypt(plaintext, feistelRounds, encryptionKey) {
                 if (!this.initialized) throw new Error("Cipher system not initialized");
@@ -693,10 +693,11 @@
                     let byte1 = data[i];
                     let byte2 = (i + 1 < data.length) ? data[i + 1] : 0x00;
 
-                    // Apply operation mode
+                    // Apply operation mode - FIXED CBC WITH POSITION
                     if (operationMode === 'cbc') {
-                        byte1 ^= previousBlock[0];
-                        byte2 ^= previousBlock[1];
+                        // Add position to prevent cycling
+                        byte1 ^= previousBlock[0] ^ (i & 0xFF);
+                        byte2 ^= previousBlock[1] ^ ((i >> 8) & 0xFF);
                     }
 
                     // Apply Feistel network
@@ -730,7 +731,7 @@
             }
 
             /**
-             * Professional Decryption with automatic padding removal
+             * Professional Decryption with automatic padding removal - FIXED CBC
              */
             async decrypt(ciphertext, feistelRounds, encryptionKey) {
                 if (!this.initialized) throw new Error("Cipher system not initialized");
@@ -777,10 +778,11 @@
                     let decryptedByte1 = byte1;
                     let decryptedByte2 = byte2;
 
-                    // Reverse operation mode
+                    // Reverse operation mode - FIXED CBC WITH POSITION
                     if (operationMode === 'cbc') {
-                        decryptedByte1 ^= previousBlock[0];
-                        decryptedByte2 ^= previousBlock[1];
+                        // Add position to match encryption
+                        decryptedByte1 ^= previousBlock[0] ^ (i & 0xFF);
+                        decryptedByte2 ^= previousBlock[1] ^ ((i >> 8) & 0xFF);
                         previousBlock = new Uint8Array([currentByte1, currentByte2]);
                     }
 
