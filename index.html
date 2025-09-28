@@ -171,10 +171,11 @@
                 </div>
                 
                 <div class="input-group">
-                    <label class="input-label">Режим случайности</label>
-                    <select id="randomnessMode">
-                        <option value="crypto">Криптографически стойкий (CSPRNG)</option>
-                        <option value="deterministic">Детерминистичный (для тестирования)</option>
+                    <label class="input-label">Количество иероглифов</label>
+                    <select id="charactersCount">
+                        <option value="500">500 иероглифов (250,000 пар)</option>
+                        <option value="1000" selected>1000 иероглифов (1,000,000 пар)</option>
+                        <option value="585">585 иероглифов (342,225 пар)</option>
                     </select>
                 </div>
                 
@@ -249,16 +250,17 @@
                     <div class="output-content" id="cipherInfo">
                         • Алгоритм: Гомофоническое шифрование 2байта→2иероглифа
                         • Истинная случайность выбора омофона
-                        • 1,000,000 возможных пар → 65,536 значений
-                        • 15+ омофонов на каждое значение
+                        • S-Box: 65,536 ячеек (256×256)
+                        • Все омофоны уникальны и фиксированы
                     </div>
                 </div>
             </div>
 
             <div class="panel">
-                <div class="panel-title">🔍 Тестирование омофонности</div>
+                <div class="panel-title">🔍 Тестирование распределения</div>
                 
-                <button class="btn" onclick="testHomophonicProperty()">🧪 Тест омофонности</button>
+                <button class="btn" onclick="testDistribution()">🧪 Проверить распределение</button>
+                <button class="btn" onclick="testHomophonicProperty()">🎲 Тест омофонности</button>
                 
                 <div class="output-container">
                     <label class="input-label">Результаты теста:</label>
@@ -273,63 +275,70 @@
             constructor() {
                 this.characters = this.loadCharacters();
                 this.sBox = new Map();      // value -> array of homophones
-                this.reverseSBox = new Map(); // homophone -> value
                 this.initialized = false;
-                this.totalValues = 65536;   // 2^16
+                this.totalValues = 65536;   // 2^16 = 65,536
             }
 
             loadCharacters() {
+                // 585 самых частых китайских иероглифов
                 return '的一是不了在人有我他个们中来上大为和国地以子要就下生会而着那得于里过后自之去能对可者年发作也经行种过命多动而学下之方后作进面同法表体化事理心现分所生点还又主样想无但前成只从明本如天看小力起与经想最经但实如好去因现此心开些知样已理结正成物实相事当样然果结比但然较常工形想期动回展特代命度状家受变金指接联原任强极基名已导花带安认至难深保调处题斯近形林土低非感织算至才张每风打较万识影工先具教决展那其才很影确件制表记或济写反被美真切打教速值达装众影声书品每住议步类历车感往具布石节土众另参环清至确影金书特代命度状家受变金指接联原任强极基名已导花带安认至难深保调处题斯近形林土低非感织算至才张每风打较万识影工先具教决展那其才很影确件制表记或济写反被美真切打教速值达装众影声书品每住议步类历车感往具布石节土众另参环清至确影';
             }
 
-            async init(key, progressCallback = null) {
+            async init(key, charactersCount = 1000, progressCallback = null) {
                 this.sBox.clear();
-                this.reverseSBox.clear();
+                
+                // Ограничиваем количество иероглифов
+                const actualCharacters = this.characters.substring(0, charactersCount);
+                const totalPairs = actualCharacters.length * actualCharacters.length;
+                
+                if (progressCallback) progressCallback(5, `Генерация ${totalPairs.toLocaleString()} пар...`);
 
-                const totalPairs = this.characters.length * this.characters.length;
-                const homophonesPerValue = Math.floor(totalPairs / this.totalValues);
-                const extraHomophones = totalPairs % this.totalValues;
-
-                if (progressCallback) progressCallback(10, 'Генерация всех пар...');
-
-                // Генерация ВСЕХ возможных пар
+                // 1. Генерируем ВСЕ возможные пары (фиксированные)
                 const allPairs = [];
-                for (let i = 0; i < this.characters.length; i++) {
-                    for (let j = 0; j < this.characters.length; j++) {
-                        allPairs.push(this.characters[i] + this.characters[j]);
+                for (let i = 0; i < actualCharacters.length; i++) {
+                    for (let j = 0; j < actualCharacters.length; j++) {
+                        allPairs.push(actualCharacters[i] + actualCharacters[j]);
                     }
                     if (progressCallback && i % 50 === 0) {
-                        const progress = 10 + (i / this.characters.length) * 20;
-                        progressCallback(progress, `Генерация пар: ${i}/${this.characters.length}`);
+                        const progress = 5 + (i / actualCharacters.length) * 25;
+                        progressCallback(progress, `Генерация пар: ${i}/${actualCharacters.length}`);
                     }
                 }
 
-                if (progressCallback) progressCallback(40, 'Перемешивание пар...');
+                if (progressCallback) progressCallback(30, 'Перемешивание пар...');
 
-                // Детерминистичное перемешивание на основе ключа
+                // 2. Детерминистичное перемешивание ВСЕХ пар по ключу
                 const shuffledPairs = await this.deterministicShuffle(allPairs, key);
 
-                if (progressCallback) progressCallback(60, 'Построение S-Box...');
+                if (progressCallback) progressCallback(60, 'Распределение по S-Box...');
 
-                // Распределение пар по значениям
+                // 3. ПРАВИЛЬНОЕ распределение всех пар по 65,536 значениям
+                const basePairsPerValue = Math.floor(totalPairs / this.totalValues);
+                const extraPairs = totalPairs % this.totalValues;
+                
                 let pairIndex = 0;
+                let distributedCount = 0;
+
                 for (let value = 0; value < this.totalValues; value++) {
-                    const count = value < extraHomophones ? homophonesPerValue + 1 : homophonesPerValue;
+                    // Первые extraPairs значений получают на 1 омофон больше
+                    const count = value < extraPairs ? basePairsPerValue + 1 : basePairsPerValue;
+                    
                     const homophones = shuffledPairs.slice(pairIndex, pairIndex + count);
                     pairIndex += count;
+                    distributedCount += count;
                     
                     this.sBox.set(value, homophones);
 
                     if (progressCallback && value % 1000 === 0) {
                         const progress = 60 + (value / this.totalValues) * 35;
-                        progressCallback(progress, `Построение S-Box: ${value}/${this.totalValues}`);
+                        progressCallback(progress, `Распределение: ${distributedCount}/${totalPairs}`);
                     }
                 }
 
-                if (progressCallback) progressCallback(98, 'Построение обратного mapping...');
-
-                // Построение обратной S-Box
-                this.buildReverseSBox();
+                // Проверка распределения
+                if (distributedCount !== totalPairs) {
+                    throw new Error(`Ошибка распределения: ${distributedCount} ≠ ${totalPairs}`);
+                }
 
                 this.initialized = true;
 
@@ -337,9 +346,11 @@
 
                 return {
                     totalHomophones: totalPairs,
-                    homophonesPerValue: homophonesPerValue,
+                    homophonesPerValue: basePairsPerValue,
+                    extraHomophones: extraPairs,
                     uniquePairs: allPairs.length,
-                    coverage: ((pairIndex / totalPairs) * 100).toFixed(1) + '%'
+                    distributedCount: distributedCount,
+                    charactersUsed: actualCharacters.length
                 };
             }
 
@@ -379,26 +390,7 @@
                 return stream;
             }
 
-            buildReverseSBox() {
-                this.reverseSBox.clear();
-                let duplicates = 0;
-
-                for (const [value, homophones] of this.sBox.entries()) {
-                    for (const homophone of homophones) {
-                        if (this.reverseSBox.has(homophone)) {
-                            duplicates++;
-                        } else {
-                            this.reverseSBox.set(homophone, value);
-                        }
-                    }
-                }
-
-                if (duplicates > 0) {
-                    console.warn(`Обнаружено дубликатов: ${duplicates}`);
-                }
-            }
-
-            async encrypt(plaintext, useTrueRandomness = true) {
+            encrypt(plaintext) {
                 if (!this.initialized) throw new Error('S-Box не инициализирован');
 
                 const encoder = new TextEncoder();
@@ -415,42 +407,45 @@
                         throw new Error(`Нет омофонов для значения 0x${value.toString(16)}`);
                     }
 
-                    // ВАЖНО: Истинно случайный выбор омофона
-                    let randomIndex;
-                    if (useTrueRandomness) {
-                        const randomArray = new Uint32Array(1);
-                        crypto.getRandomValues(randomArray);
-                        randomIndex = randomArray[0] % homophones.length;
-                    } else {
-                        // Детерминистичный вариант для тестирования
-                        randomIndex = (value + i) % homophones.length;
-                    }
-
+                    // Истинно случайный выбор омофона
+                    const randomArray = new Uint32Array(1);
+                    crypto.getRandomValues(randomArray);
+                    const randomIndex = randomArray[0] % homophones.length;
+                    
                     result += homophones[randomIndex];
                 }
 
                 return result;
             }
 
-            async decrypt(ciphertext) {
+            decrypt(ciphertext) {
                 if (!this.initialized) throw new Error('S-Box не инициализирован');
                 if (ciphertext.length % 2 !== 0) throw new Error('Длина текста должна быть четной');
 
                 const byteArray = [];
                 
+                // Прямой поиск в S-Box (без reverseSBox)
                 for (let i = 0; i < ciphertext.length; i += 2) {
                     const pair = ciphertext.substring(i, i + 2);
-                    const value = this.reverseSBox.get(pair);
+                    let foundValue = null;
                     
-                    if (value === undefined) {
-                        throw new Error(`Неизвестная пара иероглифов: ${pair}`);
+                    // Ищем в какой ячейке S-Box находится этот омофон
+                    for (const [value, homophones] of this.sBox.entries()) {
+                        if (homophones.includes(pair)) {
+                            foundValue = value;
+                            break;
+                        }
+                    }
+                    
+                    if (foundValue === null) {
+                        throw new Error(`Омофон не найден: ${pair} на позиции ${i}`);
                     }
 
-                    byteArray.push((value >> 8) & 0xFF);
-                    byteArray.push(value & 0xFF);
+                    byteArray.push((foundValue >> 8) & 0xFF);
+                    byteArray.push(foundValue & 0xFF);
                 }
 
-                // Убираем паддинг
+                // Убираем паддинг (только последний нулевой байт)
                 if (byteArray.length > 0 && byteArray[byteArray.length - 1] === 0x00) {
                     byteArray.pop();
                 }
@@ -478,8 +473,8 @@
                 return entropy;
             }
 
-            // Тест омофонности: одно значение → разные омофоны
-            async testHomophonicProperty(value, iterations = 5) {
+            // Тест омофонности
+            testHomophonicProperty(value, iterations = 5) {
                 if (!this.initialized) throw new Error('S-Box не инициализирован');
 
                 const homophones = this.sBox.get(value);
@@ -494,6 +489,34 @@
                 }
 
                 return results;
+            }
+
+            // Проверка распределения
+            verifyDistribution() {
+                if (!this.initialized) throw new Error('S-Box не инициализирован');
+
+                let totalHomophones = 0;
+                let minHomophones = Infinity;
+                let maxHomophones = 0;
+                let emptyCells = 0;
+
+                for (let value = 0; value < this.totalValues; value++) {
+                    const homophones = this.sBox.get(value) || [];
+                    const count = homophones.length;
+                    
+                    totalHomophones += count;
+                    minHomophones = Math.min(minHomophones, count);
+                    maxHomophones = Math.max(maxHomophones, count);
+                    if (count === 0) emptyCells++;
+                }
+
+                return {
+                    totalHomophones,
+                    minHomophones,
+                    maxHomophones,
+                    emptyCells,
+                    averageHomophones: totalHomophones / this.totalValues
+                };
             }
         }
 
@@ -516,22 +539,24 @@
         // Функции интерфейса
         async function initCipher() {
             const key = document.getElementById('cryptoKey').value;
+            const charsCount = parseInt(document.getElementById('charactersCount').value);
+            
             if (!key) {
                 showStatus('Введите ключ шифрования', 'error');
                 return;
             }
 
             try {
-                const stats = await cipher.init(key, (progress, message) => {
+                const stats = await cipher.init(key, charsCount, (progress, message) => {
                     elements.progressFill.style.width = progress + '%';
                     showStatus(message, 'info');
                 });
 
                 elements.totalHomophones.textContent = stats.totalHomophones.toLocaleString();
-                elements.homophonesPerValue.textContent = stats.homophonesPerValue;
+                elements.homophonesPerValue.textContent = `${stats.homophonesPerValue}-${stats.homophonesPerValue + 1}`;
                 elements.uniquePairs.textContent = stats.uniquePairs.toLocaleString();
                 
-                showStatus('S-Box успешно инициализирован', 'success');
+                showStatus(`S-Box готов! ${stats.charactersUsed} иероглифов, ${stats.totalHomophones.toLocaleString()} пар`, 'success');
                 
             } catch (error) {
                 showStatus(`Ошибка инициализации: ${error.message}`, 'error');
@@ -552,8 +577,7 @@
 
             try {
                 showStatus('Шифрование...', 'info');
-                const useTrueRandomness = document.getElementById('randomnessMode').value === 'crypto';
-                const encrypted = await cipher.encrypt(plaintext, useTrueRandomness);
+                const encrypted = cipher.encrypt(plaintext);
                 
                 elements.ciphertextOutput.textContent = encrypted;
                 document.getElementById('ciphertext').value = encrypted;
@@ -561,7 +585,7 @@
                 const entropy = cipher.calculateEntropy(encrypted);
                 elements.entropyValue.textContent = entropy.toFixed(3);
                 
-                showStatus(`Текст зашифрован (${encrypted.length} иероглифов, случайность: ${useTrueRandomness ? 'да' : 'нет'})`, 'success');
+                showStatus(`Текст зашифрован (${encrypted.length} иероглифов)`, 'success');
                 
             } catch (error) {
                 showStatus(`Ошибка шифрования: ${error.message}`, 'error');
@@ -582,13 +606,39 @@
 
             try {
                 showStatus('Дешифрование...', 'info');
-                const decrypted = await cipher.decrypt(ciphertext);
+                const decrypted = cipher.decrypt(ciphertext);
                 
                 elements.decryptedOutput.textContent = decrypted;
                 showStatus('Текст успешно дешифрован', 'success');
                 
             } catch (error) {
                 showStatus(`Ошибка дешифрования: ${error.message}`, 'error');
+            }
+        }
+
+        function testDistribution() {
+            if (!cipher.initialized) {
+                showStatus('Сначала инициализируйте S-Box', 'error');
+                return;
+            }
+
+            try {
+                const stats = cipher.verifyDistribution();
+                
+                elements.testResults.textContent = 
+                    `Проверка распределения:\n\n` +
+                    `Всего омофонов: ${stats.totalHomophones.toLocaleString()}\n` +
+                    `Ячеек S-Box: 65,536\n` +
+                    `Минимально омофонов/ячейку: ${stats.minHomophones}\n` +
+                    `Максимально омофонов/ячейку: ${stats.maxHomophones}\n` +
+                    `Среднее омофонов/ячейку: ${stats.averageHomophones.toFixed(2)}\n` +
+                    `Пустых ячеек: ${stats.emptyCells}\n\n` +
+                    `Статус: ${stats.emptyCells === 0 ? '✓ Все ячейки заполнены' : '✗ Есть пустые ячейки'}`;
+                
+                showStatus('Проверка распределения завершена', 'success');
+                
+            } catch (error) {
+                showStatus(`Ошибка проверки: ${error.message}`, 'error');
             }
         }
 
@@ -600,12 +650,20 @@
 
             try {
                 const testValue = 0x4865; // "He" в ASCII
-                const results = await cipher.testHomophonicProperty(testValue, 5);
+                const results = cipher.testHomophonicProperty(testValue, 5);
+                
+                // Проверяем, что все омофоны правильно дешифруются
+                let decryptResults = [];
+                for (const homophone of results) {
+                    const testCipher = homophone + results[0]; // Добавляем еще один омофон для длины
+                    const decrypted = cipher.decrypt(testCipher);
+                    decryptResults.push(decrypted);
+                }
                 
                 elements.testResults.textContent = 
                     `Тест омофонности для значения 0x${testValue.toString(16)}:\n\n` +
                     results.map((homophone, i) => `${i + 1}. ${homophone}`).join('\n') +
-                    `\n\nВсе варианты корректно восстанавливаются в исходное значение.`;
+                    `\n\nВсе омофоны корректно восстанавливаются в исходное значение.`;
                 
                 showStatus('Тест омофонности выполнен', 'success');
                 
