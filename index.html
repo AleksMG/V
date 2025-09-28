@@ -349,21 +349,22 @@
 
                 if (progressCallback) progressCallback(10, "Generating character set...");
 
-                // Generate professional character set
+                // Generate professional character set - GET REAL COUNT
                 const characters = this.generateCharacterSet(characterCount);
-                const totalPairs = characterCount * characterCount;
+                const REAL_CHARACTER_COUNT = characters.length;
+                const REAL_TOTAL_PAIRS = REAL_CHARACTER_COUNT * REAL_CHARACTER_COUNT;
 
                 if (progressCallback) progressCallback(30, "Creating homophone pairs...");
 
-                // Create all possible homophone pairs
+                // Create all possible homophone pairs - USE REAL COUNT
                 const allHomophones = [];
-                for (let i = 0; i < characterCount; i++) {
-                    for (let j = 0; j < characterCount; j++) {
+                for (let i = 0; i < REAL_CHARACTER_COUNT; i++) {
+                    for (let j = 0; j < REAL_CHARACTER_COUNT; j++) {
                         allHomophones.push(characters[i] + characters[j]);
                     }
                     if (progressCallback && i % 100 === 0) {
-                        progressCallback(30 + (i / characterCount) * 20, 
-                            `Generated ${(i * characterCount).toLocaleString()}/${totalPairs.toLocaleString()} pairs`);
+                        progressCallback(30 + (i / REAL_CHARACTER_COUNT) * 20, 
+                            `Generated ${(i * REAL_CHARACTER_COUNT).toLocaleString()}/${REAL_TOTAL_PAIRS.toLocaleString()} pairs`);
                     }
                 }
 
@@ -381,8 +382,8 @@
                 this.metrics.initializationTime = performance.now() - startTime;
 
                 return {
-                    charactersUsed: characterCount,
-                    totalHomophones: totalPairs,
+                    charactersUsed: REAL_CHARACTER_COUNT,
+                    totalHomophones: REAL_TOTAL_PAIRS,
                     verification: "PASS"
                 };
             }
@@ -392,10 +393,37 @@
              */
             generateCharacterSet(count) {
                 const chars = [];
-                for (let i = 0; i < count; i++) {
-                    chars.push(String.fromCodePoint(0x4E00 + (i % 20902)));
+                let codePoint = 0x4E00;
+                let found = 0;
+                
+                while (found < count) {
+                    try {
+                        const char = String.fromCodePoint(codePoint);
+                        // Only add valid Chinese characters
+                        if (this.isValidChineseCharacter(char)) {
+                            chars.push(char);
+                            found++;
+                        }
+                    } catch (e) {
+                        // Skip invalid code points
+                    }
+                    codePoint++;
+                    
+                    // Safety limit
+                    if (codePoint > 0x9FFF) {
+                        console.warn('Reached end of CJK range, generated only:', chars.length);
+                        break;
+                    }
                 }
+                
+                console.log('ACTUALLY generated characters:', chars.length, 'out of requested:', count);
                 return chars;
+            }
+
+            isValidChineseCharacter(char) {
+                const code = char.codePointAt(0);
+                // CJK Unified Ideographs range
+                return code >= 0x4E00 && code <= 0x9FFF;
             }
 
             /**
@@ -769,16 +797,16 @@
                 let repeatedSequences = 0;
                 
                 for (let i = 0; i < ciphertext.length - 1; i++) {
-                    const seq = ciphertext.substring(i, i + 2); // Check character pairs
+                    const seq = ciphertext.substring(i, i + 2);
                     if (sequences.has(seq)) {
                         repeatedSequences++;
                     }
                     sequences.add(seq);
                 }
                 
-                // 5. Maximum theoretical entropy based on character set size
-                const characterSetSize = 1000; // Based on initialization
-                const maxPossibleEntropy = Math.log2(characterSetSize);
+                // 5. Maximum theoretical entropy based on ACTUAL character set size
+                const ACTUAL_CHARACTER_SET_SIZE = this.getActualCharacterSetSize();
+                const maxPossibleEntropy = Math.log2(ACTUAL_CHARACTER_SET_SIZE);
                 
                 const efficiency = (entropy / maxPossibleEntropy) * 100;
                 
@@ -790,15 +818,28 @@
                     repeatedSequences: repeatedSequences,
                     uniqueCharacters: charFrequency.size,
                     totalCharacters: ciphertext.length,
+                    availableCharacters: ACTUAL_CHARACTER_SET_SIZE,
                     characterDistribution: this.getCharacterDistribution(charFrequency),
                     rating: this.getEntropyRating(efficiency, chiSquared, repeatedSequences)
                 };
             }
 
+            getActualCharacterSetSize() {
+                // Calculate REAL number of characters available in the system
+                const allChars = new Set();
+                for (const homophones of this.sBox.values()) {
+                    for (const homophone of homophones) {
+                        allChars.add(homophone[0]);
+                        allChars.add(homophone[1]);
+                    }
+                }
+                return allChars.size;
+            }
+
             getCharacterDistribution(frequencyMap) {
                 const sorted = Array.from(frequencyMap.entries())
                     .sort((a, b) => b[1] - a[1])
-                    .slice(0, 10); // Top 10 most frequent characters
+                    .slice(0, 10);
                 
                 return sorted.map(([char, count]) => `${char}: ${count}`).join(', ');
             }
@@ -927,7 +968,8 @@
                     `Efficiency: ${entropyResult.efficiency.toFixed(1)}%\n` +
                     `Chi-Squared: ${entropyResult.chiSquared.toFixed(1)}\n` +
                     `Repeated Sequences: ${entropyResult.repeatedSequences}\n` +
-                    `Unique Characters: ${entropyResult.uniqueCharacters}/${entropyResult.totalCharacters}\n` +
+                    `Unique Characters: ${entropyResult.uniqueCharacters}/${entropyResult.availableCharacters}\n` +
+                    `Total Characters: ${entropyResult.totalCharacters}\n` +
                     `Top Characters: ${entropyResult.characterDistribution}\n` +
                     `Rating: ${entropyResult.rating}`;
                 
