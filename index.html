@@ -464,12 +464,12 @@
             }
 
             // FEISTEL NETWORK APPLIED DURING ENCRYPTION (not during S-box generation)
-            applyFeistelNetwork(byte1, byte2, rounds, encryptionKey) {
+            async applyFeistelNetwork(byte1, byte2, rounds, encryptionKey) {
                 let left = byte1;
                 let right = byte2;
                 
                 // Generate round keys for this specific encryption
-                const roundKeys = this.generateRoundKeys(encryptionKey, rounds);
+                const roundKeys = await this.generateRoundKeys(encryptionKey, rounds);
                 
                 // Forward Feistel rounds
                 for (let round = 0; round < rounds; round++) {
@@ -479,12 +479,12 @@
                 return [left, right];
             }
 
-            reverseFeistelNetwork(byte1, byte2, rounds, encryptionKey) {
+            async reverseFeistelNetwork(byte1, byte2, rounds, encryptionKey) {
                 let left = byte1;
                 let right = byte2;
                 
                 // Generate the same round keys for decryption
-                const roundKeys = this.generateRoundKeys(encryptionKey, rounds);
+                const roundKeys = await this.generateRoundKeys(encryptionKey, rounds);
                 
                 // Reverse Feistel rounds
                 for (let round = rounds - 1; round >= 0; round--) {
@@ -494,18 +494,17 @@
                 return [left, right];
             }
 
-            generateRoundKeys(encryptionKey, rounds) {
+            async generateRoundKeys(encryptionKey, rounds) {
                 const roundKeys = [];
                 
                 for (let round = 0; round < rounds; round++) {
                     const roundKeyData = new TextEncoder().encode(encryptionKey + round.toString());
-                    const hash = crypto.subtle.digest('SHA-256', roundKeyData).then(hash => {
-                        return new Uint32Array(hash);
-                    });
-                    roundKeys.push(hash);
+                    const hash = await crypto.subtle.digest('SHA-256', roundKeyData);
+                    const hashArray = new Uint32Array(hash);
+                    roundKeys.push(hashArray);
                 }
                 
-                return Promise.all(roundKeys);
+                return roundKeys;
             }
 
             feistelRound(left, right, roundKey) {
@@ -763,6 +762,7 @@
                 
             } catch (error) {
                 updateStatus(`Encryption failed: ${error.message}`, 'error');
+                console.error('Encryption error:', error);
             }
         }
 
@@ -790,6 +790,7 @@
                 
             } catch (error) {
                 updateStatus(`Decryption failed: ${error.message}`, 'error');
+                console.error('Decryption error:', error);
             }
         }
 
